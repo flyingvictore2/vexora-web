@@ -1,0 +1,183 @@
+:root {
+  --background: #0b0c10;
+  --foreground: #f0f2f5;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --secondary: #1e293b;
+  --text-secondary: #94a3b8;
+  --card-bg: rgba(30, 41, 59, 0.6);
+  --error: #ef4444;
+  --success: #10b981;
+  --border-radius: 12px;
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --sidebar-width: 320px;
+
+  /* Plan Colors */
+  --plan-oro: #fbbf24;
+  --plan-plata: #94a3b8;
+  --plan-bronce: #cd7f32;
+  --plan-free: #475569;
+}
+
+.light-theme {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --secondary: #e2e8f0;
+  --text-secondary: #475569;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+.light-theme .glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--border-radius);
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-oro {
+  background: var(--plan-oro);
+  color: #000;
+}
+
+.badge-plata {
+  background: var(--plan-plata);
+  color: #000;
+}
+
+.badge-bronce {
+  background: var(--plan-bronce);
+  color: #000;
+}
+
+.badge-free {
+  background: var(--plan-free);
+  color: white;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-main);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+/* Utilities */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr var(--sidebar-width);
+  gap: 3rem;
+  padding: 100px 0 2rem 0;
+  max-width: 1600px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.main-layout:has(> aside:empty),
+.main-layout:not(:has(aside)) {
+  grid-template-columns: 1fr;
+}
+
+.main-content {
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    padding: 100px 2rem 2rem 2rem;
+  }
+}
+
+.btn {
+  padding: 0.6rem 2rem;
+  border-radius: var(--border-radius);
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.btn-secondary {
+  background-color: #334155;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #475569;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}

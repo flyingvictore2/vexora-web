@@ -1,0 +1,137 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.widget {
+    background-color: var(--secondary);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+:global(.light-theme) .widget {
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+}
+
+.widgetTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--foreground);
+}
+
+.widgetText {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+}
+
+.input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    padding: 0.75rem;
+    color: var(--foreground);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s;
+}
+
+:global(.light-theme) .input {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+}
+
+.discord {
+    background: linear-gradient(135deg, #5865F2 0%, #313338 100%);
+}
+
+.discordBtn {
+    background: white;
+    color: #5865F2;
+    font-weight: 700;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--border-radius);
+    font-size: 0.85rem;
+}
+
+.footerText {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
+/* Calendar Styles */
+.calendarHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.calendarGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    text-align: center;
+}
+
+.dayHead {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    padding-bottom: 5px;
+}
+
+.day {
+    font-size: 0.8rem;
+    padding: 8px 0;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.day:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+:global(.light-theme) .day:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.dayOff {
+    font-size: 0.8rem;
+    padding: 8px 0;
+    color: var(--text-secondary);
+    opacity: 0.3;
+}
+
+.today {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 10px var(--primary);
+}
+
+.hasRelease {
+    position: relative;
+}
+
+.hasRelease::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background-color: var(--primary);
+    border-radius: 50%;
+}

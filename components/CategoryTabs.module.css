@@ -1,0 +1,39 @@
+.tabsContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 2rem;
+    padding: 0.5rem 0;
+    position: sticky;
+    top: 70px;
+    background-color: var(--background);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+}
+
+:global(.light-theme) .tabsContainer {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.tabs {
+    display: flex;
+    gap: 4rem;
+}
+
+@media (max-width: 768px) {
+    .tabsContainer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        position: relative;
+        top: 0;
+    }
+
+    .tabs {
+        gap: 1.5rem;
+        overflow-x: auto;
+        width: 100%;
+        padding-bottom: 0.5rem;
+    }
+}

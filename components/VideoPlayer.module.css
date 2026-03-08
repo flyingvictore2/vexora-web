@@ -1,0 +1,243 @@
+.container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(0, 0, 0, 0.7), transparent, rgba(0, 0, 0, 0.8));
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2rem;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.hide {
+    opacity: 0;
+    cursor: none;
+}
+
+.show {
+    opacity: 1;
+}
+
+.topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.backBtn {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-decoration: none;
+    pointer-events: auto;
+}
+
+.title {
+    color: #ddd;
+    font-size: 1.2rem;
+    flex-grow: 1;
+    margin-left: 2rem;
+}
+
+.shareBtn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+    pointer-events: auto;
+}
+
+.shareBtn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.toast {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.skipBtn {
+    position: absolute;
+    bottom: 20%;
+    right: 2rem;
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 1rem 2.5rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    backdrop-filter: blur(5px);
+    transition: transform 0.2s, background 0.2s;
+    pointer-events: auto;
+}
+
+.skipBtn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+.modal {
+    position: absolute;
+    bottom: 15%;
+    right: 2rem;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1.5rem;
+    border-radius: 8px;
+    color: white;
+    min-width: 300px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease;
+    pointer-events: auto;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.modalGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.modal h4 {
+    font-size: 0.9rem;
+    color: #999;
+    margin: 0 0 0.5rem 0;
+}
+
+.modal ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.modal li {
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.modal li:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.modal li.active {
+    color: #e50914;
+    font-weight: bold;
+}
+
+.closeBtn {
+    margin-top: 1rem;
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.closeBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.controls {
+    width: 100%;
+    pointer-events: auto;
+}
+
+.seekBar {
+    width: 100%;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    accent-color: #e50914;
+}
+
+.buttonsRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.leftControls,
+.rightControls {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.playBtn {
+    color: white;
+    font-size: 2rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.controlBtn {
+    background: transparent;
+    border: none;
+    color: #ddd;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.controlBtn:hover {
+    color: white;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}

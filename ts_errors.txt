@@ -1,0 +1,49 @@
+﻿app/account/page.tsx(18,13): error TS2561: Object literal may only specify known properties, but 'invoices' does not exist in type 'userInclude<DefaultArgs>'. Did you mean to write 'invoice'?
+app/account/page.tsx(29,33): error TS2339: Property 'invoices' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(29,46): error TS7006: Parameter 'inv' implicitly has an 'any' type.
+app/account/page.tsx(37,30): error TS2339: Property 'subscription' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(38,30): error TS2339: Property 'subscription' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(39,16): error TS2339: Property 'subscription' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(71,79): error TS2339: Property 'subscription' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(73,31): error TS2339: Property 'subscription' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(80,31): error TS2339: Property 'subscription' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/account/page.tsx(100,50): error TS7006: Parameter 'invoice' implicitly has an 'any' type.
+app/api/admin/settings/route.ts(43,17): error TS2322: Type '{ key: string; value: string; }' is not assignable to type '(Without<settingCreateInput, settingUncheckedCreateInput> & settingUncheckedCreateInput) | (Without<...> & settingCreateInput)'.
+  Type '{ key: string; value: string; }' is not assignable to type 'Without<settingUncheckedCreateInput, settingCreateInput> & settingCreateInput'.
+    Property 'updatedAt' is missing in type '{ key: string; value: string; }' but required in type 'settingCreateInput'.
+app/api/auth/register/route.ts(30,17): error TS2561: Object literal may only specify known properties, but 'profiles' does not exist in type '(Without<userCreateInput, userUncheckedCreateInput> & userUncheckedCreateInput) | (Without<...> & userCreateInput)'. Did you mean to write 'profile'?
+app/api/movies/recommendations/route.ts(22,20): error TS2551: Property 'watchHistory' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'. Did you mean 'watchhistory'?
+app/api/movies/recommendations/route.ts(26,20): error TS2551: Property 'myList' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'. Did you mean 'mylist'?
+app/api/movies/recommendations/route.ts(32,58): error TS7006: Parameter 'h' implicitly has an 'any' type.
+app/api/movies/recommendations/route.ts(33,51): error TS7006: Parameter 'l' implicitly has an 'any' type.
+app/api/movies/recommendations/route.ts(38,30): error TS7006: Parameter 'h' implicitly has an 'any' type.
+app/api/movies/recommendations/route.ts(39,46): error TS7006: Parameter 'g' implicitly has an 'any' type.
+app/api/movies/recommendations/route.ts(41,24): error TS7006: Parameter 'l' implicitly has an 'any' type.
+app/api/movies/recommendations/route.ts(42,46): error TS7006: Parameter 'g' implicitly has an 'any' type.
+app/api/movies/recommendations/route.ts(62,29): error TS2322: Type '{ id: { in: unknown[]; }; }' is not assignable to type 'movieWhereInput | movieWhereInput[] | undefined'.
+  Types of property 'id' are incompatible.
+    Type '{ in: unknown[]; }' is not assignable to type 'string | StringFilter<"movie"> | undefined'.
+      Types of property 'in' are incompatible.
+        Type 'unknown[]' is not assignable to type 'string[]'.
+          Type 'unknown' is not assignable to type 'string'.
+app/api/movies/recommendations/route.ts(87,29): error TS2322: Type '{ id: { in: unknown[]; }; }' is not assignable to type 'movieWhereInput | movieWhereInput[] | undefined'.
+  Types of property 'id' are incompatible.
+    Type '{ in: unknown[]; }' is not assignable to type 'string | StringFilter<"movie"> | undefined'.
+      Types of property 'in' are incompatible.
+        Type 'unknown[]' is not assignable to type 'string[]'.
+          Type 'unknown' is not assignable to type 'string'.
+app/api/mylist/route.ts(15,33): error TS2551: Property 'myList' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'. Did you mean 'mylist'?
+app/api/mylist/route.ts(20,31): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/api/mylist/route.ts(32,35): error TS2551: Property 'myList' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'. Did you mean 'mylist'?
+app/api/mylist/route.ts(51,18): error TS2551: Property 'myList' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'. Did you mean 'mylist'?
+app/api/profiles/route.ts(15,20): error TS2561: Object literal may only specify known properties, but 'profiles' does not exist in type 'userInclude<DefaultArgs>'. Did you mean to write 'profile'?
+app/api/profiles/route.ts(18,36): error TS2339: Property 'profiles' does not exist on type '{ id: string; name: string | null; email: string | null; emailVerified: Date | null; image: string | null; password: string | null; createdAt: Date; updatedAt: Date; role: string; }'.
+app/api/profiles/route.ts(39,9): error TS2322: Type '{ name: any; userId: string; image: string; }' is not assignable to type '(Without<profileCreateInput, profileUncheckedCreateInput> & profileUncheckedCreateInput) | (Without<...> & profileCreateInput)'.
+  Type '{ name: any; userId: string; image: string; }' is not assignable to type 'Without<profileCreateInput, profileUncheckedCreateInput> & profileUncheckedCreateInput'.
+    Type '{ name: any; userId: string; image: string; }' is missing the following properties from type 'profileUncheckedCreateInput': id, updatedAt
+app/api/subscribe-success/route.ts(30,17): error TS2322: Type '{ userId: string; plan: string; status: string; nextBillingDate: Date; }' is not assignable to type '(Without<subscriptionCreateInput, subscriptionUncheckedCreateInput> & subscriptionUncheckedCreateInput) | (Without<...> & subscriptionCreateInput)'.
+  Type '{ userId: string; plan: string; status: string; nextBillingDate: Date; }' is not assignable to type 'Without<subscriptionCreateInput, subscriptionUncheckedCreateInput> & subscriptionUncheckedCreateInput'.
+    Property 'id' is missing in type '{ userId: string; plan: string; status: string; nextBillingDate: Date; }' but required in type 'subscriptionUncheckedCreateInput'.
+app/api/subscribe/route.ts(41,13): error TS2322: Type '{ userId: string; plan: any; status: string; nextBillingDate: Date; }' is not assignable to type '(Without<subscriptionCreateInput, subscriptionUncheckedCreateInput> & subscriptionUncheckedCreateInput) | (Without<...> & subscriptionCreateInput)'.
+  Type '{ userId: string; plan: any; status: string; nextBillingDate: Date; }' is not assignable to type 'Without<subscriptionCreateInput, subscriptionUncheckedCreateInput> & subscriptionUncheckedCreateInput'.
+    Property 'id' is missing in type '{ userId: string; plan: any; status: string; nextBillingDate: Date; }' but required in type 'subscriptionUncheckedCreateInput'.

@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+model account {
+  id                String  @id
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              user    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model invoice {
+  id       String   @id
+  userId   String
+  amount   Float
+  currency String   @default("EUR")
+  plan     String
+  status   String
+  date     DateTime @default(now())
+  pdfUrl   String?
+  user     user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model movie {
+  id           String         @id @default(uuid())
+  title        String
+  description  String
+  thumbnailUrl String
+  videoUrl     String
+  duration     String
+  genre        String
+  rating       String
+  year         Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  requiredPlan String         @default("FREE")
+  type         String         @default("MOVIE")
+  releaseDate  DateTime?
+  mylist       mylist[]
+  watchhistory watchhistory[]
+  episodes     episode[]
+  servers      VideoServer[]
+}
+
+model episode {
+  id            String   @id @default(uuid())
+  title         String
+  description   String   @db.Text
+  thumbnailUrl  String
+  videoUrl      String
+  episodeNumber Int
+  seasonNumber  Int
+  movieId       String
+  movie         movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  servers       VideoServer[]
+
+  @@index([movieId])
+}
+
+model VideoServer {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  quality   String
+  movieId   String?
+  episodeId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  movie     movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episode   episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([movieId])
+  @@index([episodeId])
+}
+
+model mylist {
+  id        String   @id
+  profileId String
+  movieId   String
+  createdAt DateTime @default(now())
+  movie     movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  profile   profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, movieId])
+  @@index([movieId])
+}
+
+model profile {
+  id           String         @id
+  name         String
+  image        String?
+  isKid        Boolean        @default(false)
+  pin          String?
+  userId       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  mylist       mylist[]
+  notifications Notification[]
+  user         user           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchhistory watchhistory[]
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  profileId String
+  title     String
+  message   String   @db.Text
+  type      String   // NEW_CONTENT, NEW_EPISODE
+  movieId   String?
+  episodeId String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  profile   profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model session {
+  id           String   @id
+  sessionToken String   @unique(map: "Session_sessionToken_key")
+  userId       String
+  expires      DateTime
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model setting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime
+}
+
+model subscription {
+  id              String   @id
+  userId          String   @unique(map: "Subscription_userId_key")
+  plan            String
+  status          String
+  startDate       DateTime @default(now())
+  nextBillingDate DateTime
+  user            user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model user {
+  id            String        @id
+  name          String?
+  email         String?       @unique(map: "User_email_key")
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  role          String        @default("USER")
+  account       account[]
+  invoice       invoice[]
+  profile       profile[]
+  session       session[]
+  subscription  subscription?
+}
+
+model watchhistory {
+  id        String   @id
+  profileId String
+  movieId   String
+  progress  Int      @default(0)
+  updatedAt DateTime
+  movie     movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  profile   profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, movieId])
+  @@index([movieId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
+}
+
+model SupportTicket {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  status    String   @default("PENDING") // PENDING, RESOLVED, CLOSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+}
+
+model ContentRequest {
+  id        String   @id @default(uuid())
+  title     String
+  info      String?  @db.Text
+  status    String   @default("PENDING") // PENDING, ACCEPTED, COMPLETED, REJECTED
+  userEmail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
