@@ -16,15 +16,7 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [allowRegister, setAllowRegister] = useState(true);
     const [googleLoading, setGoogleLoading] = useState(false);
-
-    React.useEffect(() => {
-        fetch("/api/config")
-            .then(res => res.json())
-            .then(data => { setAllowRegister(data.allowNewRegistrations); })
-            .catch(() => {});
-    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -270,14 +262,12 @@ export default function LoginPage() {
                 </button>
             </form>
 
-            {allowRegister && (
-                <p style={{ textAlign: "center", marginTop: "24px", fontSize: "13px", color: "#4b5563" }}>
-                    ¿No tienes cuenta?{" "}
-                    <Link href="/auth/register" style={{ color: "#a5b4fc", fontWeight: 700 }}>
-                        Créala gratis
-                    </Link>
-                </p>
-            )}
+            <p style={{ textAlign: "center", marginTop: "24px", fontSize: "13px", color: "#4b5563" }}>
+                ¿No tienes cuenta?{" "}
+                <Link href="/auth/register" style={{ color: "#a5b4fc", fontWeight: 700 }}>
+                    Créala gratis
+                </Link>
+            </p>
         </div>
     );
 }
