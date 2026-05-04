@@ -12,17 +12,15 @@ export default async function WatchEpisodePage({ params }: { params: Promise<{ i
     if (!session) {
         redirect("/auth/login");
     }
+
     const episodeItem = await prisma.episode.findUnique({
         where: { id },
         include: {
             movie: {
-                select: {
-                    title: true,
-                    requiredPlan: true
-                }
+                select: { id: true, title: true, requiredPlan: true }
             },
-            servers: true
-        }
+            servers: true,
+        },
     });
 
     if (!episodeItem) {
@@ -32,32 +30,39 @@ export default async function WatchEpisodePage({ params }: { params: Promise<{ i
     const requiredPlan = episodeItem.movie.requiredPlan || "FREE";
     const subscription = (session.user as any)?.subscription;
 
-    // Define plan hierarchy mapping
     const planHierarchy: Record<string, number> = {
-        "FREE": 0,
-        "BASIC": 1,
-        "STANDARD": 2,
-        "PREMIUM": 3
+        "FREE": 0, "BASIC": 1, "STANDARD": 2, "PREMIUM": 3,
     };
 
     const moviePlanValue = planHierarchy[requiredPlan.toUpperCase()] || 0;
-
-    // Default to FREE (0) if user has no subscription or inactive subscription
     let userPlanValue = 0;
     if (subscription && subscription.status === "ACTIVE") {
         userPlanValue = planHierarchy[subscription.plan.toUpperCase()] || 0;
     }
 
-    // If the movie is not FREE, the user must have *some* paid active subscription (> 0)
     if (moviePlanValue > 0 && userPlanValue === 0) {
         redirect("/plans");
     }
 
+    // Obtener todos los episodios de la misma serie, ordenados
+    const allEpisodes = await prisma.episode.findMany({
+        where: { movieId: episodeItem.movieId },
+        orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }],
+        select: { id: true, title: true, seasonNumber: true, episodeNumber: true },
+    });
+
+    const currentIndex = allEpisodes.findIndex(e => e.id === id);
+    const prevEpisode = currentIndex > 0 ? allEpisodes[currentIndex - 1] : null;
+    const nextEpisode = currentIndex < allEpisodes.length - 1 ? allEpisodes[currentIndex + 1] : null;
+
     return (
         <PlayerClient
-            title={`${episodeItem.movie.title} - ${episodeItem.seasonNumber}x${episodeItem.episodeNumber}: ${episodeItem.title}`}
+            title={`T${episodeItem.seasonNumber} E${episodeItem.episodeNumber}: ${episodeItem.title}`}
             defaultUrl={episodeItem.videoUrl}
             servers={episodeItem.servers}
+            seriesTitle={episodeItem.movie.title}
+            prevEpisode={prevEpisode}
+            nextEpisode={nextEpisode}
         />
     );
 }

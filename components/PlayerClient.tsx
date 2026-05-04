@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import VideoPlayer from "./VideoPlayer";
-import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface VideoServer {
@@ -12,88 +11,209 @@ interface VideoServer {
     quality: string;
 }
 
+interface EpisodeInfo {
+    id: string;
+    title: string;
+    seasonNumber: number;
+    episodeNumber: number;
+}
+
 interface PlayerClientProps {
     title: string;
     defaultUrl: string;
     servers: VideoServer[];
+    seriesTitle?: string;
+    prevEpisode?: EpisodeInfo | null;
+    nextEpisode?: EpisodeInfo | null;
 }
 
-export default function PlayerClient({ title, defaultUrl, servers }: PlayerClientProps) {
+export default function PlayerClient({
+    title,
+    defaultUrl,
+    servers,
+    seriesTitle,
+    prevEpisode,
+    nextEpisode,
+}: PlayerClientProps) {
     const router = useRouter();
 
-    // The user's provided default url becomes the "Servidor Predeterminado" if servers are active
     const legacyServer: VideoServer = {
         id: "default-0",
         name: "Servidor Principal",
         url: defaultUrl,
-        quality: "Auto"
+        quality: "Auto",
     };
 
     const allServers = servers.length > 0 ? servers : [legacyServer];
-
     const [activeServer, setActiveServer] = useState<VideoServer>(allServers[0]);
 
+    const isEpisode = !!(prevEpisode !== undefined || nextEpisode !== undefined);
+
     return (
-        <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-            {/* Header / Back button */}
-            <div style={{ padding: "1.5rem", display: "flex", alignItems: "center", zIndex: 50, background: "linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)" }}>
+        <div style={{ backgroundColor: "#07080c", minHeight: "100vh" }}>
+
+            {/* Barra superior: volver + título */}
+            <div style={{
+                padding: "14px 28px",
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                backgroundColor: "rgba(0,0,0,0.4)",
+            }}>
                 <button
-                    onClick={() => router.push("/")}
+                    onClick={() => router.back()}
                     style={{
-                        display: "flex", alignItems: "center", gap: "8px", background: "none", border: "none", color: "white",
-                        fontWeight: "700", cursor: "pointer", fontSize: "1rem", opacity: 0.8, transition: "opacity 0.2s"
+                        display: "flex", alignItems: "center", gap: "6px",
+                        background: "none", border: "none", color: "rgba(255,255,255,0.7)",
+                        fontWeight: "700", cursor: "pointer", fontSize: "0.85rem",
+                        letterSpacing: "0.5px", textTransform: "uppercase",
+                        transition: "color 0.2s", flexShrink: 0,
                     }}
-                    onMouseOver={e => e.currentTarget.style.opacity = "1"}
-                    onMouseOut={e => e.currentTarget.style.opacity = "0.8"}
+                    onMouseOver={e => e.currentTarget.style.color = "white"}
+                    onMouseOut={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
                 >
-                    <ArrowLeft size={20} />
-                    VOLVER
+                    ← Volver
                 </button>
+                <div style={{ height: "16px", width: "1px", backgroundColor: "rgba(255,255,255,0.15)" }} />
+                {seriesTitle && (
+                    <span style={{ color: "var(--primary)", fontWeight: "800", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0 }}>
+                        {seriesTitle}
+                    </span>
+                )}
+                <span style={{
+                    color: "rgba(255,255,255,0.9)", fontWeight: "600", fontSize: "0.9rem",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                    {title}
+                </span>
             </div>
 
-            {/* Video Player */}
-            <div style={{ flex: 1, backgroundColor: "black", position: "relative" }}>
-                <VideoPlayer src={activeServer.url} title={`${title} - ${activeServer.name}`} />
+            {/* Reproductor — ancho completo, ratio 16:9 */}
+            <div style={{ width: "100%", backgroundColor: "black", lineHeight: 0 }}>
+                <VideoPlayer src={activeServer.url} title={title} />
             </div>
 
-            {/* Server Selection UI (Below player) */}
-            <div style={{ padding: "2rem", maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
-                <h2 style={{ color: "white", fontSize: "1.2rem", fontWeight: "800", marginBottom: "1.5rem", textTransform: "uppercase", letterSpacing: "1px" }}>
-                    Seleccionar Servidor
-                </h2>
+            {/* Panel inferior */}
+            <div style={{ padding: "24px 32px 40px", maxWidth: "1600px", margin: "0 auto" }}>
 
-                <div className="glass-card" style={{ padding: "1.5rem", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", backgroundColor: "rgba(30,41,59,0.7)", backdropFilter: "blur(10px)" }}>
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                        {allServers.map((srv, idx) => {
-                            const isActive = srv.id === activeServer.id;
-                            return (
-                                <button
-                                    key={srv.id}
-                                    onClick={() => setActiveServer(srv)}
-                                    style={{
-                                        display: "flex", alignItems: "center", gap: "10px",
-                                        padding: "12px 20px", borderRadius: "8px",
-                                        backgroundColor: isActive ? "var(--primary)" : "rgba(255,255,255,0.03)",
-                                        border: `1px solid ${isActive ? "var(--primary)" : "rgba(255,255,255,0.1)"}`,
-                                        color: "white", cursor: "pointer", transition: "all 0.2s",
-                                        boxShadow: isActive ? "0 4px 15px rgba(37,99,235,0.4)" : "none",
-                                    }}
-                                >
-                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
-                                        <span style={{ fontWeight: "800", fontSize: "0.95rem" }}>{srv.name}</span>
+                {/* Navegación de episodios */}
+                {isEpisode && (
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "12px",
+                        marginBottom: "28px",
+                        padding: "16px",
+                        backgroundColor: "rgba(255,255,255,0.03)",
+                        borderRadius: "14px",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                    }}>
+                        <button
+                            onClick={() => prevEpisode && router.push(`/watch/episode/${prevEpisode.id}`)}
+                            disabled={!prevEpisode}
+                            style={{
+                                display: "flex", alignItems: "center", gap: "8px",
+                                padding: "10px 20px", borderRadius: "10px",
+                                backgroundColor: prevEpisode ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.02)",
+                                border: `1px solid ${prevEpisode ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)"}`,
+                                color: prevEpisode ? "white" : "rgba(255,255,255,0.25)",
+                                cursor: prevEpisode ? "pointer" : "not-allowed",
+                                fontWeight: "700", fontSize: "0.85rem",
+                                transition: "all 0.2s",
+                                minWidth: "160px", justifyContent: "center",
+                            }}
+                            onMouseOver={e => { if (prevEpisode) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"; }}
+                            onMouseOut={e => { if (prevEpisode) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.07)"; }}
+                        >
+                            ← Anterior
+                            {prevEpisode && (
+                                <span style={{ fontSize: "0.75rem", opacity: 0.6, fontWeight: "400" }}>
+                                    S{prevEpisode.seasonNumber}E{prevEpisode.episodeNumber}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Indicador episodio actual */}
+                        <div style={{ textAlign: "center", padding: "0 16px" }}>
+                            <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", fontWeight: "600", letterSpacing: "1px", textTransform: "uppercase" }}>
+                                Reproduciendo
+                            </div>
+                            <div style={{ fontSize: "0.9rem", color: "white", fontWeight: "700", marginTop: "2px" }}>
+                                {title}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => nextEpisode && router.push(`/watch/episode/${nextEpisode.id}`)}
+                            disabled={!nextEpisode}
+                            style={{
+                                display: "flex", alignItems: "center", gap: "8px",
+                                padding: "10px 20px", borderRadius: "10px",
+                                backgroundColor: nextEpisode ? "var(--primary)" : "rgba(255,255,255,0.02)",
+                                border: `1px solid ${nextEpisode ? "var(--primary)" : "rgba(255,255,255,0.05)"}`,
+                                color: nextEpisode ? "white" : "rgba(255,255,255,0.25)",
+                                cursor: nextEpisode ? "pointer" : "not-allowed",
+                                fontWeight: "700", fontSize: "0.85rem",
+                                transition: "all 0.2s",
+                                minWidth: "160px", justifyContent: "center",
+                                boxShadow: nextEpisode ? "0 4px 15px rgba(37,99,235,0.35)" : "none",
+                            }}
+                            onMouseOver={e => { if (nextEpisode) e.currentTarget.style.opacity = "0.85"; }}
+                            onMouseOut={e => { e.currentTarget.style.opacity = "1"; }}
+                        >
+                            {nextEpisode && (
+                                <span style={{ fontSize: "0.75rem", opacity: 0.8, fontWeight: "400" }}>
+                                    S{nextEpisode.seasonNumber}E{nextEpisode.episodeNumber}
+                                </span>
+                            )}
+                            Siguiente →
+                        </button>
+                    </div>
+                )}
+
+                {/* Selección de servidor */}
+                {allServers.length > 1 && (
+                    <div>
+                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", fontWeight: "700", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>
+                            Servidores disponibles
+                        </p>
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            {allServers.map((srv) => {
+                                const isActive = srv.id === activeServer.id;
+                                return (
+                                    <button
+                                        key={srv.id}
+                                        onClick={() => setActiveServer(srv)}
+                                        style={{
+                                            display: "flex", alignItems: "center", gap: "8px",
+                                            padding: "10px 18px", borderRadius: "10px",
+                                            backgroundColor: isActive ? "rgba(37,99,235,0.15)" : "rgba(255,255,255,0.04)",
+                                            border: `1px solid ${isActive ? "rgba(37,99,235,0.4)" : "rgba(255,255,255,0.08)"}`,
+                                            color: isActive ? "white" : "rgba(255,255,255,0.6)",
+                                            cursor: "pointer", fontWeight: isActive ? "700" : "500",
+                                            fontSize: "0.85rem", transition: "all 0.2s",
+                                        }}
+                                        onMouseOver={e => { if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)"; }}
+                                        onMouseOut={e => { if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"; }}
+                                    >
+                                        {isActive && <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "var(--primary)", display: "inline-block" }} />}
+                                        {srv.name}
                                         <span style={{
-                                            fontSize: "0.7rem", fontWeight: "900", padding: "2px 6px", borderRadius: "4px",
-                                            backgroundColor: isActive ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.1)"
+                                            fontSize: "0.65rem", fontWeight: "800", padding: "2px 6px",
+                                            borderRadius: "4px", letterSpacing: "0.5px",
+                                            backgroundColor: isActive ? "rgba(37,99,235,0.3)" : "rgba(255,255,255,0.08)",
+                                            color: isActive ? "#93c5fd" : "rgba(255,255,255,0.4)",
                                         }}>
                                             {srv.quality}
                                         </span>
-                                    </div>
-                                    {isActive && <div style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "white", marginLeft: "5px" }} />}
-                                </button>
-                            );
-                        })}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
