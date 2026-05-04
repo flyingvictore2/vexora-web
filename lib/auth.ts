@@ -60,7 +60,7 @@ export const authOptions: NextAuthOptions = {
     },
     secret: process.env.NEXTAUTH_SECRET,
     callbacks: {
-        async jwt({ token, user, trigger }) {
+        async jwt({ token, user }) {
             if (user) {
                 token.id = user.id;
                 token.email = user.email;
@@ -68,13 +68,8 @@ export const authOptions: NextAuthOptions = {
 
             const userId = token.id as string;
 
-            // Default role check based on email (SuperAdmin)
-            if (token.email === "flyingvictor2006@gmail.com") {
-                token.role = "ADMIN";
-            }
-
             if (userId) {
-                // Fetch user from DB for role and subscription
+                // Fetch user from DB for role and subscription (always refresh)
                 const dbUser = await prisma.user.findUnique({
                     where: { id: userId },
                     include: { subscription: true }
@@ -86,14 +81,17 @@ export const authOptions: NextAuthOptions = {
                         plan: dbUser.subscription.plan
                     } : null;
 
-                    // Update role from DB if not already set by SuperAdmin email
-                    if (token.role !== "ADMIN") {
+                    // SuperAdmin siempre es ADMIN, el resto usa el rol de la BD
+                    if (token.email === "flyingvictor2006@gmail.com") {
+                        token.role = "ADMIN";
+                    } else {
                         token.role = dbUser.role || "USER";
                     }
-                } else if (!token.role) {
-                    token.role = "USER";
+                } else {
+                    // Usuario no encontrado en BD (OAuth sin cuenta): solo superadmin por email
+                    token.role = token.email === "flyingvictor2006@gmail.com" ? "ADMIN" : "USER";
                 }
-            } else if (!token.role) {
+            } else {
                 token.role = "USER";
             }
 
