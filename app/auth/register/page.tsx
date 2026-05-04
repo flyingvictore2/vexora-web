@@ -17,14 +17,13 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [allowRegister, setAllowRegister] = useState(true);
-    const [checking, setChecking] = useState(true);
+    const [allowRegister, setAllowRegister] = useState<boolean | null>(null);
 
     React.useEffect(() => {
         fetch("/api/config")
             .then(res => res.json())
-            .then(data => { setAllowRegister(data.allowNewRegistrations); })
-            .finally(() => setChecking(false));
+            .then(data => { setAllowRegister(data.allowNewRegistrations ?? true); })
+            .catch(() => { setAllowRegister(true); });
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -73,9 +72,8 @@ export default function RegisterPage() {
         boxShadow: "0 0 0 1px rgba(99,102,241,0.08), 0 32px 64px rgba(0,0,0,0.6), 0 0 80px rgba(99,102,241,0.06)",
     };
 
-    if (checking) return null;
-
-    if (!allowRegister) {
+    // Mientras carga la config, mostrar el formulario directamente (evita el flash)
+    if (allowRegister === false) {
         return (
             <div style={cardStyle}>
                 {/* Logo */}

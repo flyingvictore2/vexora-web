@@ -45,6 +45,7 @@ export default withAuth(
 export const config = {
     matcher: [
         "/",
+        "/auth/:path*",
         "/profiles/:path*",
         "/movies/:path*",
         "/series/:path*",
