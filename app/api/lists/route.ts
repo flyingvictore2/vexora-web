@@ -7,38 +7,50 @@ export const dynamic = "force-dynamic";
 
 // GET /api/lists?profileId=xxx — obtener todas las listas del perfil
 export async function GET(req: Request) {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const profileId = searchParams.get("profileId");
-    if (!profileId) return NextResponse.json({ error: "profileId required" }, { status: 400 });
+        const { searchParams } = new URL(req.url);
+        const profileId = searchParams.get("profileId");
+        if (!profileId) return NextResponse.json({ error: "profileId required" }, { status: 400 });
 
-    const lists = await prisma.userList.findMany({
-        where: { profileId },
-        include: {
-            items: {
-                include: { movie: true },
-                orderBy: { createdAt: "desc" },
+        const lists = await prisma.userList.findMany({
+            where: { profileId },
+            include: {
+                items: {
+                    include: { movie: true },
+                    orderBy: { createdAt: "desc" },
+                },
             },
-        },
-        orderBy: { createdAt: "asc" },
-    });
+            orderBy: { createdAt: "asc" },
+        });
 
-    return NextResponse.json(lists);
+        return NextResponse.json(lists);
+    } catch (err) {
+        console.error("[GET /api/lists]", err);
+        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    }
 }
 
 // POST /api/lists — crear una lista nueva
 export async function POST(req: Request) {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { profileId, name } = await req.json();
-    if (!profileId || !name?.trim()) return NextResponse.json({ error: "profileId y name requeridos" }, { status: 400 });
+        const { profileId, name } = await req.json();
+        if (!profileId || !name?.trim()) {
+            return NextResponse.json({ error: "profileId y name requeridos" }, { status: 400 });
+        }
 
-    const list = await prisma.userList.create({
-        data: { id: crypto.randomUUID(), name: name.trim(), profileId },
-    });
+        const list = await prisma.userList.create({
+            data: { name: name.trim(), profileId },
+        });
 
-    return NextResponse.json(list);
+        return NextResponse.json(list);
+    } catch (err) {
+        console.error("[POST /api/lists]", err);
+        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    }
 }

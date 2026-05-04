@@ -17,8 +17,10 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
     const [open, setOpen] = useState(false);
     const [lists, setLists] = useState<UserList[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [newListName, setNewListName] = useState("");
     const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState<string | null>(null);
     const [profileId, setProfileId] = useState<string | null>(null);
     const [savingId, setSavingId] = useState<string | null>(null);
     const ref = useRef<HTMLDivElement>(null);
@@ -33,9 +35,17 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
     useEffect(() => {
         if (!open || !profileId) return;
         setLoading(true);
+        setError(null);
         fetch(`/api/lists?profileId=${profileId}`)
             .then(r => r.json())
-            .then(data => setLists(Array.isArray(data) ? data : []))
+            .then(data => {
+                if (data?.error) {
+                    setError(data.error);
+                } else {
+                    setLists(Array.isArray(data) ? data : []);
+                }
+            })
+            .catch(() => setError("No se pudieron cargar las listas"))
             .finally(() => setLoading(false));
     }, [open, profileId]);
 
@@ -52,35 +62,34 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
         const inList = list.items.some(i => i.movieId === movieId);
         setSavingId(list.id);
         try {
-            if (inList) {
-                await fetch(`/api/lists/${list.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ movieId }),
-                });
-                setLists(prev => prev.map(l => l.id === list.id
-                    ? { ...l, items: l.items.filter(i => i.movieId !== movieId) }
-                    : l
-                ));
-            } else {
-                await fetch(`/api/lists/${list.id}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ movieId }),
-                });
-                setLists(prev => prev.map(l => l.id === list.id
-                    ? { ...l, items: [...l.items, { movieId }] }
-                    : l
-                ));
-            }
+            const res = await fetch(`/api/lists/${list.id}`, {
+                method: inList ? "PATCH" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ movieId }),
+            });
+            if (!res.ok) return; // silently ignore duplicates
+            setLists(prev => prev.map(l => l.id === list.id
+                ? {
+                    ...l,
+                    items: inList
+                        ? l.items.filter(i => i.movieId !== movieId)
+                        : [...l.items, { movieId }],
+                }
+                : l
+            ));
         } finally {
             setSavingId(null);
         }
     };
 
     const createList = async () => {
-        if (!newListName.trim() || !profileId) return;
+        if (!newListName.trim()) return;
+        if (!profileId) {
+            setCreateError("Selecciona un perfil primero");
+            return;
+        }
         setCreating(true);
+        setCreateError(null);
         try {
             const res = await fetch("/api/lists", {
                 method: "POST",
@@ -88,24 +97,32 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
                 body: JSON.stringify({ profileId, name: newListName.trim() }),
             });
             const newList = await res.json();
+            if (!res.ok || newList.error) {
+                setCreateError(newList.error || "Error al crear la lista");
+                return;
+            }
+
             // Añadir película directamente a la nueva lista
             await fetch(`/api/lists/${newList.id}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ movieId }),
             });
+
             setLists(prev => [...prev, { ...newList, items: [{ movieId }] }]);
             setNewListName("");
+        } catch {
+            setCreateError("Error de red. Inténtalo de nuevo.");
         } finally {
             setCreating(false);
         }
     };
 
     const btnStyle: React.CSSProperties = minimal ? {
-        width: "44px", height: "44px", borderRadius: "50%",
+        width: "36px", height: "36px", borderRadius: "50%",
         border: isInAnyList ? "2px solid #2563eb" : "2px solid rgba(255,255,255,0.3)",
-        backgroundColor: isInAnyList ? "rgba(37,99,235,0.2)" : "rgba(255,255,255,0.05)",
-        color: "white", fontSize: "1.3rem", display: "flex",
+        backgroundColor: isInAnyList ? "rgba(37,99,235,0.2)" : "rgba(0,0,0,0.4)",
+        color: "white", fontSize: "1.1rem", display: "flex",
         alignItems: "center", justifyContent: "center",
         cursor: "pointer", transition: "all 0.2s", flexShrink: 0,
     } : {
@@ -121,7 +138,7 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
             <button
                 style={btnStyle}
                 onClick={() => setOpen(v => !v)}
-                title="Añadir a lista"
+                title={isInAnyList ? "En mis listas" : "Añadir a lista"}
                 onMouseOver={e => e.currentTarget.style.opacity = "0.85"}
                 onMouseOut={e => e.currentTarget.style.opacity = "1"}
             >
@@ -135,7 +152,7 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
                 <div style={{
                     position: "absolute", top: "calc(100% + 8px)",
                     left: minimal ? "auto" : 0, right: minimal ? 0 : "auto",
-                    zIndex: 999, minWidth: "240px",
+                    zIndex: 999, minWidth: "250px",
                     backgroundColor: "rgba(15,18,30,0.98)",
                     border: "1px solid rgba(255,255,255,0.12)",
                     borderRadius: "12px", padding: "12px",
@@ -146,8 +163,14 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
                         Mis listas
                     </p>
 
-                    {loading ? (
+                    {!profileId ? (
+                        <div style={{ padding: "12px 0", textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: "0.8rem" }}>
+                            Selecciona un perfil para gestionar listas
+                        </div>
+                    ) : loading ? (
                         <div style={{ padding: "12px 0", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "0.8rem" }}>Cargando...</div>
+                    ) : error ? (
+                        <div style={{ padding: "12px 0", textAlign: "center", color: "#f87171", fontSize: "0.8rem" }}>{error}</div>
                     ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "10px" }}>
                             {lists.length === 0 && (
@@ -190,37 +213,43 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
                     )}
 
                     {/* Crear nueva lista */}
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "10px" }}>
-                        <p style={{ fontSize: "0.7rem", fontWeight: "700", color: "rgba(255,255,255,0.35)", marginBottom: "6px" }}>
-                            Nueva lista
-                        </p>
-                        <div style={{ display: "flex", gap: "6px" }}>
-                            <input
-                                value={newListName}
-                                onChange={e => setNewListName(e.target.value)}
-                                onKeyDown={e => e.key === "Enter" && createList()}
-                                placeholder="Nombre de la lista..."
-                                style={{
-                                    flex: 1, padding: "8px 10px", borderRadius: "7px", fontSize: "0.82rem",
-                                    backgroundColor: "rgba(255,255,255,0.06)",
-                                    border: "1px solid rgba(255,255,255,0.1)", color: "white", outline: "none",
-                                }}
-                            />
-                            <button
-                                onClick={createList}
-                                disabled={!newListName.trim() || creating}
-                                style={{
-                                    padding: "8px 12px", borderRadius: "7px", fontWeight: "700",
-                                    backgroundColor: newListName.trim() ? "#2563eb" : "rgba(255,255,255,0.05)",
-                                    border: "none", color: "white", cursor: newListName.trim() ? "pointer" : "not-allowed",
-                                    fontSize: "0.82rem", transition: "all 0.2s",
-                                    opacity: creating ? 0.6 : 1,
-                                }}
-                            >
-                                {creating ? "..." : "Crear"}
-                            </button>
+                    {profileId && (
+                        <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "10px" }}>
+                            <p style={{ fontSize: "0.7rem", fontWeight: "700", color: "rgba(255,255,255,0.35)", marginBottom: "6px" }}>
+                                Nueva lista
+                            </p>
+                            {createError && (
+                                <p style={{ fontSize: "0.72rem", color: "#f87171", marginBottom: "6px" }}>{createError}</p>
+                            )}
+                            <div style={{ display: "flex", gap: "6px" }}>
+                                <input
+                                    value={newListName}
+                                    onChange={e => { setNewListName(e.target.value); setCreateError(null); }}
+                                    onKeyDown={e => e.key === "Enter" && createList()}
+                                    placeholder="Nombre de la lista..."
+                                    style={{
+                                        flex: 1, padding: "8px 10px", borderRadius: "7px", fontSize: "0.82rem",
+                                        backgroundColor: "rgba(255,255,255,0.06)",
+                                        border: createError ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                                        color: "white", outline: "none",
+                                    }}
+                                />
+                                <button
+                                    onClick={createList}
+                                    disabled={!newListName.trim() || creating}
+                                    style={{
+                                        padding: "8px 12px", borderRadius: "7px", fontWeight: "700",
+                                        backgroundColor: newListName.trim() ? "#2563eb" : "rgba(255,255,255,0.05)",
+                                        border: "none", color: "white", cursor: newListName.trim() ? "pointer" : "not-allowed",
+                                        fontSize: "0.82rem", transition: "all 0.2s",
+                                        opacity: creating ? 0.6 : 1,
+                                    }}
+                                >
+                                    {creating ? "..." : "Crear"}
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
         </div>
