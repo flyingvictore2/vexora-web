@@ -30,16 +30,13 @@ export async function POST(request: Request) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Super admin siempre obtiene rol ADMIN
-        const isSuperAdmin = email === "flyingvictor2006@gmail.com";
-
         const user = await prisma.user.create({
             data: {
                 id: crypto.randomUUID(),
                 updatedAt: new Date(),
                 email,
                 password: hashedPassword,
-                role: isSuperAdmin ? "ADMIN" : "USER",
+                role: "USER", // Siempre USER — el JWT callback da ADMIN al superadmin por email
                 // Create a default profile
                 profile: {
                     create: {
