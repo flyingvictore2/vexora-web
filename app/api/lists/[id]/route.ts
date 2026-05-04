@@ -5,25 +5,23 @@ import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// DELETE /api/lists/[id] — eliminar lista
+// DELETE /api/lists/[id]
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         const { id } = await params;
-
-        // Primero borramos los items (no hay ON DELETE CASCADE en raw SQL fácilmente)
         await prisma.$executeRawUnsafe(`DELETE FROM "UserListItem" WHERE "listId" = $1`, id);
         await prisma.$executeRawUnsafe(`DELETE FROM "UserList" WHERE id = $1`, id);
-
         return NextResponse.json({ success: true });
-    } catch (err) {
-        console.error("[DELETE /api/lists/[id]]", err);
-        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[DELETE /api/lists/[id]]", msg);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
 
-// POST /api/lists/[id] — añadir película a lista
+// POST /api/lists/[id] — añadir película
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
@@ -41,28 +39,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         );
 
         return NextResponse.json({ id: itemId, listId: id, movieId });
-    } catch (err) {
-        console.error("[POST /api/lists/[id]]", err);
-        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[POST /api/lists/[id]]", msg);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
 
-// PATCH /api/lists/[id] — quitar película de lista
+// PATCH /api/lists/[id] — quitar película
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         const { id } = await params;
         const { movieId } = await req.json();
-
         await prisma.$executeRawUnsafe(
             `DELETE FROM "UserListItem" WHERE "listId" = $1 AND "movieId" = $2`,
             id, movieId
         );
-
         return NextResponse.json({ success: true });
-    } catch (err) {
-        console.error("[PATCH /api/lists/[id]]", err);
-        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[PATCH /api/lists/[id]]", msg);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
