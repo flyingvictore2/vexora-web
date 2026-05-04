@@ -1,34 +1,55 @@
 import React from "react";
 import prisma from "@/lib/prisma";
-import Row from "@/components/Row";
+import FilterBar from "@/components/FilterBar";
+import MovieGrid from "@/components/MovieGrid";
 
 export const dynamic = "force-dynamic";
 
-export default async function AnimesPage() {
-    const animes = await prisma.movie.findMany({
-        where: {
-            type: "ANIME"
-        }
+interface PageProps {
+    searchParams: Promise<{ genre?: string; year?: string; sort?: string }>;
+}
+
+export default async function AnimesPage({ searchParams }: PageProps) {
+    const params = await searchParams;
+    const genre = params.genre || "";
+    const year = params.year || "";
+    const sort = params.sort || "";
+
+    // Build filter
+    const where: Record<string, unknown> = { type: "ANIME" };
+    if (genre) where.genre = genre;
+    if (year) where.year = parseInt(year);
+
+    // Fetch filtered anime
+    let animes = await prisma.movie.findMany({
+        where,
+        orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
     });
 
-    const displayMovies = animes.length > 0 ? animes : await prisma.movie.findMany({ where: { type: "ANIME" }, take: 10 });
+    if (sort === "rating") {
+        animes = animes.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
+    }
+
+    // Get all genres and years for FilterBar (unfiltered)
+    const allAnimes = await prisma.movie.findMany({
+        where: { type: "ANIME" },
+        select: { genre: true, year: true },
+    });
+    const genres = [...new Set(allAnimes.map(m => m.genre).filter(Boolean))].sort() as string[];
+    const years = [...new Set(allAnimes.map(m => m.year).filter(Boolean))].sort((a, b) => b - a) as number[];
 
     return (
-        <div style={{ paddingBottom: "2rem" }}>
-            {animes.length > 0 ? (
-                <>
-                    <Row title="Animes" movies={displayMovies} isLargeRow />
-                    <Row title="Lo más visto en Anime" movies={displayMovies.slice().reverse()} />
-                </>
-            ) : (
-                <div style={{ textAlign: 'center', padding: '5rem 0' }}>
-                    <h2 style={{ color: 'white', marginBottom: '1rem' }}>Sección de Anime</h2>
-                    <p style={{ color: '#94a3b8' }}>Estamos preparando el mejor contenido para ti. Mientras tanto, echa un vistazo a estas recomendaciones.</p>
-                    <div style={{ marginTop: '3rem' }}>
-                        <Row title="Recomendados para ti" movies={displayMovies} isLargeRow />
-                    </div>
-                </div>
-            )}
+        <div style={{ padding: "2rem 4% 4rem" }}>
+            <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "800", marginBottom: "1.5rem" }}>
+                Anime
+                {animes.length > 0 && (
+                    <span style={{ fontSize: "1rem", fontWeight: "400", color: "rgba(255,255,255,0.35)", marginLeft: "12px" }}>
+                        {animes.length} resultado{animes.length !== 1 ? "s" : ""}
+                    </span>
+                )}
+            </h1>
+            <FilterBar genres={genres} years={years} currentGenre={genre} currentYear={year} currentSort={sort} />
+            <MovieGrid movies={animes} emptyMessage="No hay anime con esos filtros." />
         </div>
     );
 }

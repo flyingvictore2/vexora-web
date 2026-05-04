@@ -57,10 +57,11 @@ model movie {
   requiredPlan String         @default("FREE")
   type         String         @default("MOVIE")
   releaseDate  DateTime?
-  mylist       mylist[]
-  watchhistory watchhistory[]
-  episodes     episode[]
-  servers      VideoServer[]
+  mylist        mylist[]
+  watchhistory  watchhistory[]
+  episodes      episode[]
+  servers       VideoServer[]
+  userlistitems UserListItem[]
 }
 
 model episode {
@@ -122,8 +123,32 @@ model profile {
   notifications Notification[]
   user         user           @relation(fields: [userId], references: [id], onDelete: Cascade)
   watchhistory watchhistory[]
+  userlists    UserList[]
 
   @@index([userId])
+}
+
+model UserList {
+  id        String         @id @default(uuid())
+  name      String
+  profileId String
+  createdAt DateTime       @default(now())
+  profile   profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items     UserListItem[]
+
+  @@index([profileId])
+}
+
+model UserListItem {
+  id        String   @id @default(uuid())
+  listId    String
+  movieId   String
+  createdAt DateTime @default(now())
+  list      UserList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  movie     movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, movieId])
+  @@index([listId])
 }
 
 model Notification {

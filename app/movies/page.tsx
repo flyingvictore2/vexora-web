@@ -1,20 +1,56 @@
 import React from "react";
 import prisma from "@/lib/prisma";
-import Row from "@/components/Row";
+import FilterBar from "@/components/FilterBar";
+import MovieGrid from "@/components/MovieGrid";
 
 export const dynamic = "force-dynamic";
 
-export default async function MoviesPage() {
-    const movies = await prisma.movie.findMany({
-        where: {
-            type: "MOVIE"
-        }
+interface PageProps {
+    searchParams: Promise<{ genre?: string; year?: string; sort?: string }>;
+}
+
+export default async function MoviesPage({ searchParams }: PageProps) {
+    const params = await searchParams;
+    const genre = params.genre || "";
+    const year = params.year || "";
+    const sort = params.sort || "";
+
+    // Build filter
+    const where: Record<string, unknown> = { type: "MOVIE" };
+    if (genre) where.genre = genre;
+    if (year) where.year = parseInt(year);
+
+    // Fetch filtered movies
+    let movies = await prisma.movie.findMany({
+        where,
+        orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
     });
 
+    // Sort by rating in JS (stored as string)
+    if (sort === "rating") {
+        movies = movies.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
+    }
+
+    // Get all genres and years for FilterBar (unfiltered)
+    const allMovies = await prisma.movie.findMany({
+        where: { type: "MOVIE" },
+        select: { genre: true, year: true },
+    });
+    const genres = [...new Set(allMovies.map(m => m.genre).filter(Boolean))].sort() as string[];
+    const years = [...new Set(allMovies.map(m => m.year).filter(Boolean))].sort((a, b) => b - a) as number[];
+
     return (
-        <div style={{ paddingBottom: "2rem" }}>
-            <Row title="Películas" movies={movies} isLargeRow />
-            <Row title="Más Películas" movies={movies.slice().reverse()} />
+        <div style={{ padding: "2rem 4% 4rem" }}>
+            <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "800", marginBottom: "1.5rem" }}>
+                Películas
+                {movies.length > 0 && (
+                    <span style={{ fontSize: "1rem", fontWeight: "400", color: "rgba(255,255,255,0.35)", marginLeft: "12px" }}>
+                        {movies.length} resultado{movies.length !== 1 ? "s" : ""}
+                    </span>
+                )}
+            </h1>
+            <FilterBar genres={genres} years={years} currentGenre={genre} currentYear={year} currentSort={sort} />
+            <MovieGrid movies={movies} emptyMessage="No hay películas con esos filtros." />
         </div>
     );
 }
