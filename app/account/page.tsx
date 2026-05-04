@@ -238,7 +238,7 @@ export default function AccountPage() {
 
                         <Field label="Rol">
                             <div style={{ padding: "11px 14px", background: "rgba(255,255,255,0.03)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)", fontSize: "14px", color: "var(--text-secondary)" }}>
-                                {userData?.role === "ADMIN" ? "🛡️ Administrador" : "👤 Usuario"}
+                                {(session?.user as any)?.role === "ADMIN" ? "🛡️ Administrador" : "👤 Usuario"}
                             </div>
                         </Field>
 

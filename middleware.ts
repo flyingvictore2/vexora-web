@@ -5,8 +5,10 @@ export default withAuth(
     function middleware(req) {
         const token = req.nextauth.token;
         const isAuth = !!token;
-        const isAuthPage = req.nextUrl.pathname.startsWith("/auth");
+        const pathname = req.nextUrl.pathname;
+        const isAuthPage = pathname.startsWith("/auth");
 
+        // Si está autenticado y va a /auth → redirigir a /profiles
         if (isAuthPage) {
             if (isAuth) {
                 return NextResponse.redirect(new URL("/profiles", req.url));
@@ -14,35 +16,50 @@ export default withAuth(
             return null;
         }
 
+        // Si no está autenticado → login
         if (!isAuth) {
             return NextResponse.redirect(new URL("/auth/login", req.url));
         }
 
-        // Protect Admin routes
-        const isAdminPage = req.nextUrl.pathname.startsWith("/admin");
-        if (isAdminPage && token.role !== "ADMIN") {
+        // Proteger rutas de admin: solo rol ADMIN
+        const isAdminPage = pathname.startsWith("/admin");
+        if (isAdminPage && token?.role !== "ADMIN") {
             return NextResponse.redirect(new URL("/", req.url));
         }
 
-        // Note: Checking localStorage is not possible in middleware (server-side).
-        // The profile selection check will remain client-side in the main layout or page components.
-
+        // Pasar pathname al header para usarlo en server components
         const requestHeaders = new Headers(req.headers);
-        requestHeaders.set("x-pathname", req.nextUrl.pathname);
+        requestHeaders.set("x-pathname", pathname);
 
         return NextResponse.next({
-            request: {
-                headers: requestHeaders,
-            },
+            request: { headers: requestHeaders },
         });
     },
     {
         callbacks: {
-            authorized: ({ token }) => true, // middleware handles logic
+            authorized: ({ token }) => true, // el middleware maneja la lógica
         },
     }
 );
 
 export const config = {
-    matcher: ["/", "/profiles/:path*", "/movies/:path*", "/series/:path*", "/animes/:path*", "/search/:path*", "/list/:path*", "/calendar/:path*", "/requests/:path*", "/support/:path*", "/admin/:path*"],
+    matcher: [
+        "/",
+        "/profiles/:path*",
+        "/movies/:path*",
+        "/series/:path*",
+        "/animes/:path*",
+        "/search/:path*",
+        "/list/:path*",
+        "/calendar/:path*",
+        "/requests/:path*",
+        "/support/:path*",
+        "/account/:path*",
+        "/plans/:path*",
+        "/checkout/:path*",
+        "/watch/:path*",
+        "/title/:path*",
+        "/admin",
+        "/admin/:path*",
+    ],
 };
