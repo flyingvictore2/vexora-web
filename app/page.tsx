@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Row from "@/components/Row";
-import CategoryTabs from "@/components/CategoryTabs";
+import Hero from "@/components/Hero";
 import axios from "axios";
 
 export default function Home() {
@@ -42,45 +42,58 @@ export default function Home() {
         }
     };
 
-    // Auto-refresh: poll for new content every 30 seconds
+    // Auto-refresh cada 30 segundos
     useEffect(() => {
         if (status !== "authenticated") return;
         const profileId = localStorage.getItem("selectedProfileId");
         if (!profileId) return;
-
-        fetchContent(profileId);
         const interval = setInterval(() => fetchContent(profileId), 30000);
         return () => clearInterval(interval);
     }, [status]);
 
     if (status === "loading" || loading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b0c10', color: 'white' }}>
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#0b0c10',
+                color: 'white'
+            }}>
                 <p>Cargando...</p>
             </div>
         );
     }
 
+    const heroMovie = recommendations[0] || movies[0] || null;
+    const novedades = [...movies].reverse().slice(0, 18);
+    const peliculas = movies.filter(m => m.type === "MOVIE").slice(0, 18);
+    const series = movies.filter(m => m.type === "SERIE").slice(0, 18);
+    const anime = movies.filter(m => m.type === "ANIME").slice(0, 18);
+    const recomendados = (recommendations.length > 0 ? recommendations : movies).slice(0, 18);
+
     return (
-        <div style={{ paddingBottom: "2rem" }}>
-            <CategoryTabs />
-            {(movies.length > 0 || recommendations.length > 0) ? (
-                <>
-                    <Row
-                        title="Recomendados para ti"
-                        movies={recommendations.length > 0 ? recommendations : movies}
-                        isLargeRow
-                    />
-                    <Row title="Películas en Tendencia" movies={movies.filter(m => m.type === "MOVIE").slice(0, 10)} />
-                    <Row title="Series más Vistas" movies={movies.filter(m => m.type === "SERIE").slice(0, 10)} />
-                    <Row title="Animes Imprescindibles" movies={movies.filter(m => m.type === "ANIME").slice(0, 10)} />
-                    <Row title="Añadido Recientemente" movies={[...movies].reverse().slice(0, 10)} />
-                </>
-            ) : (
-                <div style={{ color: '#94a3b8', textAlign: 'center', padding: '100px 0' }}>
+        <div style={{ paddingBottom: "3rem" }}>
+            {/* Hero banner */}
+            {heroMovie && <Hero movie={heroMovie} />}
+
+            {movies.length === 0 && !heroMovie && (
+                <div style={{ color: '#94a3b8', textAlign: 'center', padding: '120px 0' }}>
                     <p style={{ fontSize: '18px' }}>No hay contenido disponible por ahora.</p>
                 </div>
             )}
+
+            {/* Secciones principales */}
+            <div style={{ marginTop: heroMovie ? '-4rem' : '0', position: 'relative', zIndex: 2 }}>
+                <Row title="Novedades" movies={novedades} isLargeRow />
+                <Row title="Películas" movies={peliculas} />
+                <Row title="Series" movies={series} />
+                <Row title="Anime" movies={anime} />
+                {recommendations.length > 0 && (
+                    <Row title="Recomendados para ti" movies={recomendados} />
+                )}
+            </div>
         </div>
     );
 }

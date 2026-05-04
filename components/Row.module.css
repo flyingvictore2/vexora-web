@@ -1,154 +1,175 @@
 .row {
-    margin-bottom: 3rem;
+    margin-bottom: 2.5rem;
+    padding: 0 4%;
 }
 
 .rowTitle {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    margin-bottom: 1.5rem;
-    color: var(--foreground);
-}
-
-.featuredCard {
-    display: flex;
-    background-color: var(--background);
-    background-image: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, transparent 100%);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    height: 380px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-:global(.light-theme) .featuredCard {
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    background-color: white;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-}
-
-.featuredPosterWrapper {
-    width: 400px;
-    min-width: 400px;
-    position: relative;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    overflow: hidden;
-}
-
-.featuredPosterImg {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-.featuredInfo {
-    flex: 1;
-    padding: 2.5rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.featuredTitle {
-    font-size: 2rem;
-    font-weight: 800;
     margin-bottom: 0.75rem;
     color: var(--foreground);
+    padding-left: 0.1rem;
 }
 
-.stars {
-    display: flex;
-    gap: 0.3rem;
-    margin-bottom: 1.25rem;
-    font-size: 1rem;
-}
-
-.ratingNumber {
-    margin-left: 0.75rem;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    font-weight: 700;
-}
-
-.featuredDesc {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 2rem;
-    max-width: 550px;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    line-clamp: 3;
-    overflow: hidden;
-}
-
-.actions {
-    display: flex;
-    gap: 1rem;
+.sliderContainer {
+    position: relative;
 }
 
 .posters {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 0.5rem 0.1rem;
+    scrollbar-width: none;
+}
+
+.posters::-webkit-scrollbar {
+    display: none;
 }
 
 .posterWrapper {
+    flex: 0 0 auto;
+    width: 200px;
     position: relative;
-    transition: transform 0.2s;
     cursor: pointer;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    display: block;
 }
 
 .posterWrapper:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
     z-index: 10;
+}
+
+.large .posterWrapper {
+    width: 240px;
 }
 
 .poster {
     width: 100%;
-    border-radius: 6px;
+    aspect-ratio: 16/9;
     object-fit: cover;
+    display: block;
+    border-radius: 4px;
+    background-color: #1e293b;
 }
 
-.badge {
+.overlay {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 4px 8px;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.35) 55%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0.75rem;
+    opacity: 0;
+    transition: opacity 0.25s ease;
     border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #eab308;
 }
 
-.miniBadge {
+.posterWrapper:hover .overlay {
+    opacity: 1;
+}
+
+.playBtn {
     position: absolute;
-    top: 5px;
-    left: 5px;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.7rem;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -65%);
+    width: 38px;
+    height: 38px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding-left: 3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.overlayTitle {
+    font-size: 0.78rem;
     font-weight: 700;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+}
+
+.overlayMeta {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.68rem;
+    align-items: center;
+}
+
+.rating {
     color: #eab308;
-    z-index: 5;
+    font-weight: 700;
+}
+
+.year {
+    color: #94a3b8;
+}
+
+/* Arrow buttons */
+.arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    border: none;
+    width: 36px;
+    height: 68px;
+    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    border-radius: 3px;
+    line-height: 1;
+}
+
+.sliderContainer:hover .arrow {
+    opacity: 1;
+}
+
+.arrow:hover {
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.arrowLeft {
+    left: -10px;
+}
+
+.arrowRight {
+    right: -10px;
 }
 
 @media (max-width: 768px) {
-    .featuredCard {
-        flex-direction: column;
-        height: auto;
+    .row {
+        padding: 0 2%;
     }
 
-    .featuredPoster {
-        width: 100%;
-        height: 200px;
+    .posterWrapper {
+        width: 140px;
     }
 
-    .featuredTitle {
-        font-size: 1.4rem;
+    .large .posterWrapper {
+        width: 160px;
+    }
+
+    .arrow {
+        display: none;
     }
 }

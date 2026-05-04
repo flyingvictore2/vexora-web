@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import styles from "./Row.module.css";
-
 import Link from "next/link";
 
 export interface Movie {
@@ -25,67 +24,66 @@ interface RowProps {
 }
 
 export default function Row({ title, movies, isLargeRow }: RowProps) {
+    const rowRef = useRef<HTMLDivElement>(null);
+
     if (!movies || movies.length === 0) return null;
 
-    const featuredMovie = movies[0];
-    const otherMovies = movies.slice(1);
+    const scroll = (direction: "left" | "right") => {
+        if (rowRef.current) {
+            const amount = direction === "left"
+                ? -rowRef.current.offsetWidth * 0.75
+                : rowRef.current.offsetWidth * 0.75;
+            rowRef.current.scrollBy({ left: amount, behavior: "smooth" });
+        }
+    };
 
     return (
         <div className={styles.row}>
             <h2 className={styles.rowTitle}>{title}</h2>
+            <div className={styles.sliderContainer}>
+                <button
+                    className={`${styles.arrow} ${styles.arrowLeft}`}
+                    onClick={() => scroll("left")}
+                    aria-label="Anterior"
+                >
+                    ‹
+                </button>
 
-            {/* Featured Horizontal Card */}
-            <div className={styles.featuredCard}>
-                <div className={styles.featuredPosterWrapper}>
-                    <img
-                        src={featuredMovie.thumbnailUrl}
-                        alt={featuredMovie.title}
-                        className={styles.featuredPosterImg}
-                    />
-                    <div className={styles.badge}>★ {featuredMovie.rating || 'N/A'}</div>
-                </div>
-                <div className={styles.featuredInfo}>
-                    <h3 className={styles.featuredTitle}>{featuredMovie.title}</h3>
-                    <div className={styles.stars}>
-                        {'★★★★★'.split('').map((s, i) => (
-                            <span key={i} style={{ color: i < 4 ? '#eab308' : '#4b5563' }}>★</span>
-                        ))}
-                        <span className={styles.ratingNumber}>{featuredMovie.rating}</span>
-                    </div>
-                    <p className={styles.featuredDesc}>{featuredMovie.description}</p>
-                    <div className={styles.actions}>
-                        {(featuredMovie.type === "SERIE" || featuredMovie.type === "ANIME") ? (
-                            <Link href={`/series/${featuredMovie.id}`} className="btn btn-primary">
-                                <span>📺</span> VER EPISODIOS
+                <div
+                    className={`${styles.posters} ${isLargeRow ? styles.large : ""}`}
+                    ref={rowRef}
+                >
+                    {movies.map((movie) => {
+                        const href = (movie.type === "SERIE" || movie.type === "ANIME")
+                            ? `/series/${movie.id}`
+                            : `/title/${movie.id}`;
+                        return (
+                            <Link key={movie.id} href={href} className={styles.posterWrapper}>
+                                <img
+                                    src={movie.thumbnailUrl}
+                                    alt={movie.title}
+                                    className={styles.poster}
+                                />
+                                <div className={styles.overlay}>
+                                    <div className={styles.playBtn}>▶</div>
+                                    <p className={styles.overlayTitle}>{movie.title}</p>
+                                    <div className={styles.overlayMeta}>
+                                        {movie.rating && <span className={styles.rating}>★ {movie.rating}</span>}
+                                        {movie.year && <span className={styles.year}>{movie.year}</span>}
+                                    </div>
+                                </div>
                             </Link>
-                        ) : (
-                            <Link href={`/watch/${featuredMovie.id}`} className="btn btn-primary">
-                                <span>▶</span> VER AHORA
-                            </Link>
-                        )}
-                        <Link href={`/title/${featuredMovie.id}`} className="btn btn-secondary">
-                            VER TRAILER
-                        </Link>
-                    </div>
+                        );
+                    })}
                 </div>
-            </div>
 
-            {/* Grid of other posters */}
-            <div className={styles.posters}>
-                {otherMovies.map((movie) => (
-                    <Link
-                        key={movie.id}
-                        href={(movie.type === "SERIE" || movie.type === "ANIME") ? `/series/${movie.id}` : `/title/${movie.id}`}
-                        className={styles.posterWrapper}
-                    >
-                        <div className={styles.miniBadge}>★ {movie.rating}</div>
-                        <img
-                            className={styles.poster}
-                            src={movie.thumbnailUrl}
-                            alt={movie.title}
-                        />
-                    </Link>
-                ))}
+                <button
+                    className={`${styles.arrow} ${styles.arrowRight}`}
+                    onClick={() => scroll("right")}
+                    aria-label="Siguiente"
+                >
+                    ›
+                </button>
             </div>
         </div>
     );

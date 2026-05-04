@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
+import Footer from "@/components/Footer";
 import React from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -58,22 +58,12 @@ export default async function RootLayout({
             <body className={inter.className}>
                 <Providers>
                     <Navbar />
-                    <LayoutWrapper>
+                    <main className="page-wrapper">
                         {children}
-                    </LayoutWrapper>
+                    </main>
+                    <Footer />
                 </Providers>
             </body>
         </html>
-    );
-}
-
-function LayoutWrapper({ children }: { children: React.ReactNode }) {
-    return (
-        <main className="container main-layout">
-            <div className="main-content">
-                {children}
-            </div>
-            <Sidebar />
-        </main>
     );
 }
