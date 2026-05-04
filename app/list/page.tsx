@@ -26,7 +26,7 @@ interface UserList {
     createdAt: string;
 }
 
-function MovieCard({ movie, onRemove }: { movie: MovieItem; onRemove?: () => void }) {
+function MovieCard({ movie }: { movie: MovieItem }) {
     const href = `/title/${movie.id}`;
     return (
         <div style={{
@@ -91,8 +91,12 @@ function UserListSection({
     const handleDelete = async () => {
         if (!confirmDelete) { setConfirmDelete(true); return; }
         setDeleting(true);
-        await fetch(`/api/lists/${list.id}`, { method: "DELETE" });
-        onDelete(list.id);
+        try {
+            await fetch(`/api/lists/${list.id}`, { method: "DELETE" });
+            onDelete(list.id);
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const handleRemoveMovie = async (movieId: string) => {
@@ -113,9 +117,9 @@ function UserListSection({
                 <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.8rem" }}>
                     {list.items.length} {list.items.length === 1 ? "título" : "títulos"}
                 </span>
-                <div style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>
+                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
                     {confirmDelete && (
-                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem", alignSelf: "center" }}>
+                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}>
                             ¿Seguro?
                         </span>
                     )}
@@ -177,36 +181,66 @@ export default function MyListsPage() {
     const [userLists, setUserLists] = useState<UserList[]>([]);
     const [myList, setMyList] = useState<MovieItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [profileId, setProfileId] = useState<string | null>(null);
     const [newListName, setNewListName] = useState("");
     const [creating, setCreating] = useState(false);
+    const [createError, setCreateError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
-        const profileId = localStorage.getItem("selectedProfileId");
-        if (!profileId) { setLoading(false); return; }
+        const pid = localStorage.getItem("selectedProfileId");
+        setProfileId(pid);
+        if (!pid) { setLoading(false); return; }
 
         Promise.all([
-            fetch(`/api/lists?profileId=${profileId}`).then(r => r.json()),
-            fetch(`/api/mylist?profileId=${profileId}`).then(r => r.json()).catch(() => []),
+            fetch(`/api/lists?profileId=${pid}`)
+                .then(r => r.json())
+                .catch(() => ({ error: "Error de red" })),
+            fetch(`/api/mylist?profileId=${pid}`)
+                .then(r => r.json())
+                .catch(() => []),
         ]).then(([lists, mylist]) => {
-            setUserLists(Array.isArray(lists) ? lists : []);
+            if (lists?.error) {
+                setLoadError(lists.error);
+            } else {
+                setUserLists(Array.isArray(lists) ? lists : []);
+            }
             setMyList(Array.isArray(mylist) ? mylist : []);
         }).finally(() => setLoading(false));
     }, []);
 
     const createList = async () => {
-        if (!newListName.trim()) return;
-        const profileId = localStorage.getItem("selectedProfileId");
-        if (!profileId) return;
+        const name = newListName.trim();
+        if (!name) return;
+
+        if (!profileId) {
+            setCreateError("No hay perfil seleccionado. Vuelve a la pantalla de perfiles.");
+            return;
+        }
+
         setCreating(true);
+        setCreateError(null);
+
         try {
             const res = await fetch("/api/lists", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ profileId, name: newListName.trim() }),
+                body: JSON.stringify({ profileId, name }),
             });
-            const newList = await res.json();
-            setUserLists(prev => [...prev, { ...newList, items: [] }]);
+
+            const data = await res.json();
+
+            if (!res.ok || data?.error) {
+                setCreateError(data?.error || `Error ${res.status}: no se pudo crear la lista`);
+                return;
+            }
+
+            // data is the new list (id, name, profileId, createdAt)
+            setUserLists(prev => [...prev, { ...data, items: [] }]);
             setNewListName("");
+        } catch (err) {
+            setCreateError("Error de red. Comprueba tu conexión e inténtalo de nuevo.");
+            console.error("createList error:", err);
         } finally {
             setCreating(false);
         }
@@ -234,41 +268,66 @@ export default function MyListsPage() {
     return (
         <div style={{ padding: "2rem 4% 4rem" }}>
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "2.5rem", flexWrap: "wrap" }}>
-                <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "800", margin: 0 }}>Mis Listas</h1>
-                {/* Create new list */}
-                <div style={{ display: "flex", gap: "8px", marginLeft: "auto" }}>
-                    <input
-                        value={newListName}
-                        onChange={e => setNewListName(e.target.value)}
-                        onKeyDown={e => e.key === "Enter" && createList()}
-                        placeholder="Nueva lista..."
-                        style={{
-                            padding: "9px 14px", borderRadius: "8px", fontSize: "0.85rem",
-                            backgroundColor: "rgba(255,255,255,0.07)",
-                            border: "1px solid rgba(255,255,255,0.12)", color: "white", outline: "none",
-                            width: "200px",
-                        }}
-                    />
-                    <button
-                        onClick={createList}
-                        disabled={!newListName.trim() || creating}
-                        style={{
-                            padding: "9px 18px", borderRadius: "8px", fontWeight: "700",
-                            backgroundColor: newListName.trim() ? "#2563eb" : "rgba(255,255,255,0.05)",
-                            border: "none", color: "white",
-                            cursor: newListName.trim() ? "pointer" : "not-allowed",
-                            fontSize: "0.85rem", transition: "all 0.2s",
-                            opacity: creating ? 0.6 : 1,
-                        }}
-                    >
-                        {creating ? "..." : "+ Crear lista"}
-                    </button>
+            <div style={{ marginBottom: "2.5rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                    <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "800", margin: 0 }}>Mis Listas</h1>
+
+                    {/* Create new list */}
+                    <div style={{ display: "flex", gap: "8px", marginLeft: "auto", alignItems: "center" }}>
+                        <input
+                            value={newListName}
+                            onChange={e => { setNewListName(e.target.value); setCreateError(null); }}
+                            onKeyDown={e => e.key === "Enter" && createList()}
+                            placeholder="Nueva lista..."
+                            style={{
+                                padding: "9px 14px", borderRadius: "8px", fontSize: "0.85rem",
+                                backgroundColor: "rgba(255,255,255,0.07)",
+                                border: createError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(255,255,255,0.12)",
+                                color: "white", outline: "none", width: "200px",
+                            }}
+                        />
+                        <button
+                            onClick={createList}
+                            disabled={!newListName.trim() || creating}
+                            style={{
+                                padding: "9px 18px", borderRadius: "8px", fontWeight: "700",
+                                backgroundColor: newListName.trim() && !creating ? "#2563eb" : "rgba(255,255,255,0.05)",
+                                border: "none", color: "white",
+                                cursor: newListName.trim() && !creating ? "pointer" : "not-allowed",
+                                fontSize: "0.85rem", transition: "all 0.2s",
+                                opacity: creating ? 0.6 : 1,
+                                whiteSpace: "nowrap",
+                            }}
+                        >
+                            {creating ? "Creando..." : "+ Crear lista"}
+                        </button>
+                    </div>
                 </div>
+
+                {/* Error / no-profile messages */}
+                {!profileId && (
+                    <p style={{ color: "#f87171", fontSize: "0.85rem", marginTop: "12px" }}>
+                        ⚠️ No hay perfil activo.{" "}
+                        <Link href="/profiles" style={{ color: "#60a5fa", textDecoration: "underline" }}>
+                            Selecciona un perfil
+                        </Link>
+                        {" "}para gestionar tus listas.
+                    </p>
+                )}
+                {createError && (
+                    <p style={{ color: "#f87171", fontSize: "0.85rem", marginTop: "12px" }}>
+                        ⚠️ {createError}
+                    </p>
+                )}
+                {loadError && (
+                    <p style={{ color: "#f87171", fontSize: "0.85rem", marginTop: "12px" }}>
+                        ⚠️ Error al cargar listas: {loadError}
+                    </p>
+                )}
             </div>
 
             {/* Custom user lists */}
-            {userLists.length === 0 && myList.length === 0 ? (
+            {userLists.length === 0 && myList.length === 0 && !loadError ? (
                 <div style={{ textAlign: "center", padding: "5rem 0", color: "rgba(255,255,255,0.35)" }}>
                     <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📋</div>
                     <h2 style={{ color: "white", marginBottom: "0.5rem" }}>Aún no tienes listas</h2>
@@ -285,7 +344,7 @@ export default function MyListsPage() {
                         />
                     ))}
 
-                    {/* Old quick-add list (mylist) */}
+                    {/* Old quick-add list */}
                     {myList.length > 0 && (
                         <div style={{ marginBottom: "3rem" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
