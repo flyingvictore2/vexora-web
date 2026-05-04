@@ -89,13 +89,15 @@ export default function PlayerClient({
                 </span>
             </div>
 
-            {/* Reproductor — ancho completo, ratio 16:9 */}
-            <div style={{ width: "100%", backgroundColor: "black", lineHeight: 0 }}>
-                <VideoPlayer src={activeServer.url} title={title} />
+            {/* Reproductor — contenedor centrado con márgenes */}
+            <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 28px" }}>
+                <div style={{ backgroundColor: "black", borderRadius: "0 0 12px 12px", overflow: "hidden", lineHeight: 0 }}>
+                    <VideoPlayer src={activeServer.url} title={title} />
+                </div>
             </div>
 
             {/* Panel inferior */}
-            <div style={{ padding: "24px 32px 40px", maxWidth: "1600px", margin: "0 auto" }}>
+            <div style={{ padding: "24px 32px 40px", maxWidth: "1100px", margin: "0 auto" }}>
 
                 {/* Navegación de episodios */}
                 {isEpisode && (
