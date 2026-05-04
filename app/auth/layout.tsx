@@ -1,74 +1,67 @@
 import React from "react";
 
-export default function AuthLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
         <div style={{
             minHeight: "100vh",
             width: "100%",
             position: "relative",
             display: "flex",
-            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
             padding: "20px",
-            /* Fondo tipo Netflix: oscuro con gradiente radial sutil */
             background: `
-                radial-gradient(ellipse at 20% 50%, rgba(229,9,20,0.08) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(229,9,20,0.05) 0%, transparent 50%),
-                #0b0c10
+                radial-gradient(ellipse at 15% 40%, rgba(99,102,241,0.18) 0%, transparent 55%),
+                radial-gradient(ellipse at 85% 70%, rgba(139,92,246,0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 60%),
+                #08090d
             `,
             overflow: "hidden",
         }}>
-            {/* Grid de películas simulado como fondo (efecto Netflix) */}
+            {/* Partículas de fondo - líneas diagonales sutiles */}
             <div style={{
                 position: "absolute",
                 inset: 0,
-                display: "grid",
-                gridTemplateColumns: "repeat(8, 1fr)",
-                gridTemplateRows: "repeat(5, 1fr)",
-                gap: "4px",
-                opacity: 0.07,
-                transform: "scale(1.05)",
-                pointerEvents: "none",
+                backgroundImage: `
+                    repeating-linear-gradient(
+                        -45deg,
+                        transparent,
+                        transparent 60px,
+                        rgba(99,102,241,0.025) 60px,
+                        rgba(99,102,241,0.025) 61px
+                    )
+                `,
                 zIndex: 0,
-            }}>
-                {Array.from({ length: 40 }).map((_, i) => (
-                    <div key={i} style={{
-                        background: `hsl(${(i * 37) % 360}, 30%, ${15 + (i % 4) * 5}%)`,
-                        borderRadius: "2px",
-                    }} />
-                ))}
-            </div>
-
-            {/* Overlay oscuro sobre el grid */}
-            <div style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(11,12,16,0.82)",
-                backdropFilter: "blur(1px)",
-                zIndex: 1,
+                pointerEvents: "none",
             }} />
 
-            {/* Logo en la esquina superior izquierda (estilo Netflix) */}
+            {/* Orbe brillante superior izquierda */}
             <div style={{
                 position: "absolute",
-                top: "28px",
-                left: "40px",
-                zIndex: 10,
-                fontSize: "1.8rem",
-                fontWeight: 900,
-                color: "#e50914",
-                letterSpacing: "2px",
-                fontFamily: "inherit",
-            }}>
-                ANTIGRA
-            </div>
+                top: "-120px",
+                left: "-80px",
+                width: "420px",
+                height: "420px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)",
+                pointerEvents: "none",
+                zIndex: 0,
+            }} />
 
-            {/* Contenido (form) */}
+            {/* Orbe inferior derecha */}
+            <div style={{
+                position: "absolute",
+                bottom: "-100px",
+                right: "-60px",
+                width: "380px",
+                height: "380px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)",
+                pointerEvents: "none",
+                zIndex: 0,
+            }} />
+
+            {/* Contenido */}
             <div style={{ width: "100%", maxWidth: "420px", position: "relative", zIndex: 10 }}>
                 {children}
             </div>

@@ -13,7 +13,7 @@ export default function Navbar() {
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isDark, setIsDark] = useState(true);
-    const [siteName, setSiteName] = useState("Series.ly");
+    const [siteName, setSiteName] = useState("Vexora");
     const pathname = usePathname();
     const router = useRouter();
 
