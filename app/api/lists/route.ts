@@ -5,7 +5,34 @@ import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/lists?profileId=xxx — obtener todas las listas del perfil
+// Asegurar que las tablas existen (se ejecuta la primera vez si faltan)
+async function ensureTables() {
+    await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "UserList" (
+            id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+            name        TEXT NOT NULL,
+            "profileId" TEXT NOT NULL REFERENCES profile(id) ON DELETE CASCADE,
+            "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now()
+        )
+    `);
+    await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS "UserList_profileId_idx" ON "UserList"("profileId")
+    `);
+    await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "UserListItem" (
+            id          TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+            "listId"    TEXT NOT NULL REFERENCES "UserList"(id) ON DELETE CASCADE,
+            "movieId"   TEXT NOT NULL REFERENCES movie(id) ON DELETE CASCADE,
+            "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+            UNIQUE("listId", "movieId")
+        )
+    `);
+    await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS "UserListItem_listId_idx" ON "UserListItem"("listId")
+    `);
+}
+
+// GET /api/lists?profileId=xxx
 export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);
@@ -15,7 +42,8 @@ export async function GET(req: Request) {
         const profileId = searchParams.get("profileId");
         if (!profileId) return NextResponse.json({ error: "profileId required" }, { status: 400 });
 
-        // Raw SQL — no depende del cliente Prisma generado
+        await ensureTables();
+
         const rows = await prisma.$queryRawUnsafe<Array<{
             listId: string;
             listName: string;
@@ -28,7 +56,6 @@ export async function GET(req: Request) {
             movieYear: number | null;
             movieType: string | null;
             movieDuration: string | null;
-            itemCreatedAt: Date | null;
         }>>(
             `SELECT
                 ul.id          AS "listId",
@@ -41,8 +68,7 @@ export async function GET(req: Request) {
                 m.rating          AS "movieRating",
                 m.year            AS "movieYear",
                 m.type            AS "movieType",
-                m.duration        AS "movieDuration",
-                uli."createdAt"   AS "itemCreatedAt"
+                m.duration        AS "movieDuration"
             FROM "UserList" ul
             LEFT JOIN "UserListItem" uli ON uli."listId" = ul.id
             LEFT JOIN movie           m  ON m.id = uli."movieId"
@@ -51,7 +77,6 @@ export async function GET(req: Request) {
             profileId
         );
 
-        // Agrupar filas por lista
         const listsMap = new Map<string, {
             id: string; name: string; createdAt: Date;
             items: Array<{ movieId: string; movie: object }>;
@@ -84,13 +109,15 @@ export async function GET(req: Request) {
         }
 
         return NextResponse.json(Array.from(listsMap.values()));
-    } catch (err) {
-        console.error("[GET /api/lists]", err);
-        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[GET /api/lists]", msg);
+        // Devolver el error real temporalmente para poder diagnosticar
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
 
-// POST /api/lists — crear una lista nueva
+// POST /api/lists
 export async function POST(req: Request) {
     try {
         const session = await getServerSession(authOptions);
@@ -100,6 +127,8 @@ export async function POST(req: Request) {
         if (!profileId || !name?.trim()) {
             return NextResponse.json({ error: "profileId y name requeridos" }, { status: 400 });
         }
+
+        await ensureTables();
 
         const id = crypto.randomUUID();
         await prisma.$executeRawUnsafe(
@@ -113,8 +142,9 @@ export async function POST(req: Request) {
         );
 
         return NextResponse.json(rows[0]);
-    } catch (err) {
-        console.error("[POST /api/lists]", err);
-        return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[POST /api/lists]", msg);
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
