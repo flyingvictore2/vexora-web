@@ -11,7 +11,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
         const session = await getServerSession(authOptions);
         if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         const { id } = await params;
-        await prisma.userList.delete({ where: { id } });
+
+        // Primero borramos los items (no hay ON DELETE CASCADE en raw SQL fácilmente)
+        await prisma.$executeRawUnsafe(`DELETE FROM "UserListItem" WHERE "listId" = $1`, id);
+        await prisma.$executeRawUnsafe(`DELETE FROM "UserList" WHERE id = $1`, id);
+
         return NextResponse.json({ success: true });
     } catch (err) {
         console.error("[DELETE /api/lists/[id]]", err);
@@ -28,15 +32,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const { movieId } = await req.json();
         if (!movieId) return NextResponse.json({ error: "movieId requerido" }, { status: 400 });
 
-        const item = await prisma.userListItem.create({
-            data: { listId: id, movieId },
-        });
-        return NextResponse.json(item);
-    } catch (err: unknown) {
-        // Unique constraint violation → ya está en la lista
-        if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "P2002") {
-            return NextResponse.json({ error: "Ya está en la lista" }, { status: 409 });
-        }
+        const itemId = crypto.randomUUID();
+        await prisma.$executeRawUnsafe(
+            `INSERT INTO "UserListItem" (id, "listId", "movieId", "createdAt")
+             VALUES ($1, $2, $3, now())
+             ON CONFLICT ("listId", "movieId") DO NOTHING`,
+            itemId, id, movieId
+        );
+
+        return NextResponse.json({ id: itemId, listId: id, movieId });
+    } catch (err) {
         console.error("[POST /api/lists/[id]]", err);
         return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });
     }
@@ -49,7 +54,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         const { id } = await params;
         const { movieId } = await req.json();
-        await prisma.userListItem.deleteMany({ where: { listId: id, movieId } });
+
+        await prisma.$executeRawUnsafe(
+            `DELETE FROM "UserListItem" WHERE "listId" = $1 AND "movieId" = $2`,
+            id, movieId
+        );
+
         return NextResponse.json({ success: true });
     } catch (err) {
         console.error("[PATCH /api/lists/[id]]", err);
