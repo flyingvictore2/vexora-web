@@ -9,42 +9,25 @@ export default async function WatchEpisodePage({ params }: { params: Promise<{ i
     const { id } = await params;
     const session = await getServerSession(authOptions);
 
-    if (!session) {
-        redirect("/auth/login");
-    }
+    if (!session) redirect("/auth/login");
 
     const episodeItem = await prisma.episode.findUnique({
         where: { id },
         include: {
-            movie: {
-                select: { id: true, title: true, requiredPlan: true }
-            },
+            movie: { select: { id: true, title: true, requiredPlan: true } },
             servers: true,
         },
     });
 
-    if (!episodeItem) {
-        return <div>Episode not found</div>;
-    }
+    if (!episodeItem) return <div>Episode not found</div>;
 
-    const requiredPlan = episodeItem.movie.requiredPlan || "FREE";
+    const planHierarchy: Record<string, number> = { FREE: 0, BASIC: 1, STANDARD: 2, PREMIUM: 3 };
     const subscription = (session.user as any)?.subscription;
-
-    const planHierarchy: Record<string, number> = {
-        "FREE": 0, "BASIC": 1, "STANDARD": 2, "PREMIUM": 3,
-    };
-
-    const moviePlanValue = planHierarchy[requiredPlan.toUpperCase()] || 0;
+    const moviePlanValue = planHierarchy[(episodeItem.movie.requiredPlan || "FREE").toUpperCase()] || 0;
     let userPlanValue = 0;
-    if (subscription && subscription.status === "ACTIVE") {
-        userPlanValue = planHierarchy[subscription.plan.toUpperCase()] || 0;
-    }
+    if (subscription?.status === "ACTIVE") userPlanValue = planHierarchy[subscription.plan.toUpperCase()] || 0;
+    if (moviePlanValue > 0 && userPlanValue === 0) redirect("/plans");
 
-    if (moviePlanValue > 0 && userPlanValue === 0) {
-        redirect("/plans");
-    }
-
-    // Obtener todos los episodios de la misma serie, ordenados
     const allEpisodes = await prisma.episode.findMany({
         where: { movieId: episodeItem.movieId },
         orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }],
@@ -57,10 +40,15 @@ export default async function WatchEpisodePage({ params }: { params: Promise<{ i
 
     return (
         <PlayerClient
-            title={`T${episodeItem.seasonNumber} E${episodeItem.episodeNumber}: ${episodeItem.title}`}
+            title={episodeItem.title}
             defaultUrl={episodeItem.videoUrl}
             servers={episodeItem.servers}
             seriesTitle={episodeItem.movie.title}
+            episodeNumber={episodeItem.episodeNumber}
+            seasonNumber={episodeItem.seasonNumber}
+            episodeThumbnail={episodeItem.thumbnailUrl}
+            episodeDescription={episodeItem.description}
+            movieId={episodeItem.movieId}
             prevEpisode={prevEpisode}
             nextEpisode={nextEpisode}
         />

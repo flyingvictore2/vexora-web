@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import VideoPlayer from "./VideoPlayer";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface VideoServer {
     id: string;
@@ -22,7 +23,14 @@ interface PlayerClientProps {
     title: string;
     defaultUrl: string;
     servers: VideoServer[];
+    // Movie only
+    movieId?: string;
+    // Episode fields
     seriesTitle?: string;
+    episodeNumber?: number;
+    seasonNumber?: number;
+    episodeThumbnail?: string;
+    episodeDescription?: string;
     prevEpisode?: EpisodeInfo | null;
     nextEpisode?: EpisodeInfo | null;
 }
@@ -31,157 +39,168 @@ export default function PlayerClient({
     title,
     defaultUrl,
     servers,
+    movieId,
     seriesTitle,
+    episodeNumber,
+    seasonNumber,
+    episodeThumbnail,
+    episodeDescription,
     prevEpisode,
     nextEpisode,
 }: PlayerClientProps) {
     const router = useRouter();
+    const isEpisode = episodeNumber !== undefined;
 
-    const legacyServer: VideoServer = {
-        id: "default-0",
-        name: "Servidor Principal",
-        url: defaultUrl,
-        quality: "Auto",
-    };
-
+    const legacyServer: VideoServer = { id: "default-0", name: "Servidor Principal", url: defaultUrl, quality: "Auto" };
     const allServers = servers.length > 0 ? servers : [legacyServer];
     const [activeServer, setActiveServer] = useState<VideoServer>(allServers[0]);
 
-    const isEpisode = !!(prevEpisode !== undefined || nextEpisode !== undefined);
+    const backHref = isEpisode && movieId ? `/title/${movieId}` : "/";
 
     return (
-        <div style={{ backgroundColor: "#07080c", minHeight: "100vh" }}>
+        <div style={{ backgroundColor: "#0a0b10", minHeight: "100vh", paddingBottom: "3rem" }}>
 
-            {/* Barra superior: volver + título */}
+            {/* ← VOLVER A LA FICHA */}
             <div style={{
-                padding: "14px 28px",
-                display: "flex",
-                alignItems: "center",
-                gap: "16px",
+                padding: "12px 0",
                 borderBottom: "1px solid rgba(255,255,255,0.06)",
-                backgroundColor: "rgba(0,0,0,0.4)",
+                maxWidth: "1100px",
+                margin: "0 auto",
+                paddingLeft: "28px",
+                paddingRight: "28px",
             }}>
-                <button
-                    onClick={() => router.back()}
-                    style={{
-                        display: "flex", alignItems: "center", gap: "6px",
-                        background: "none", border: "none", color: "rgba(255,255,255,0.7)",
-                        fontWeight: "700", cursor: "pointer", fontSize: "0.85rem",
-                        letterSpacing: "0.5px", textTransform: "uppercase",
-                        transition: "color 0.2s", flexShrink: 0,
-                    }}
-                    onMouseOver={e => e.currentTarget.style.color = "white"}
-                    onMouseOut={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+                <Link href={backHref} style={{
+                    display: "inline-flex", alignItems: "center", gap: "6px",
+                    color: "rgba(255,255,255,0.55)", fontSize: "0.78rem", fontWeight: "700",
+                    textDecoration: "none", letterSpacing: "0.5px", textTransform: "uppercase",
+                    transition: "color 0.2s",
+                }}
+                    onMouseOver={e => (e.currentTarget.style.color = "white")}
+                    onMouseOut={e => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
                 >
-                    ← Volver
-                </button>
-                <div style={{ height: "16px", width: "1px", backgroundColor: "rgba(255,255,255,0.15)" }} />
-                {seriesTitle && (
-                    <span style={{ color: "var(--primary)", fontWeight: "800", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.5px", flexShrink: 0 }}>
-                        {seriesTitle}
-                    </span>
-                )}
-                <span style={{
-                    color: "rgba(255,255,255,0.9)", fontWeight: "600", fontSize: "0.9rem",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
-                    {title}
-                </span>
+                    ← {isEpisode ? "Volver a la ficha" : "Volver"}
+                </Link>
             </div>
 
-            {/* Reproductor — contenedor centrado con márgenes */}
             <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "0 28px" }}>
-                <div style={{ backgroundColor: "black", borderRadius: "0 0 12px 12px", overflow: "hidden", lineHeight: 0 }}>
-                    <VideoPlayer src={activeServer.url} title={title} />
-                </div>
-            </div>
 
-            {/* Panel inferior */}
-            <div style={{ padding: "24px 32px 40px", maxWidth: "1100px", margin: "0 auto" }}>
-
-                {/* Navegación de episodios */}
+                {/* CABECERA DE EPISODIO */}
                 {isEpisode && (
                     <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "12px",
-                        marginBottom: "28px",
-                        padding: "16px",
                         backgroundColor: "rgba(255,255,255,0.03)",
-                        borderRadius: "14px",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: "12px",
+                        padding: "16px 20px",
+                        marginTop: "16px",
+                        marginBottom: "20px",
                     }}>
-                        <button
-                            onClick={() => prevEpisode && router.push(`/watch/episode/${prevEpisode.id}`)}
-                            disabled={!prevEpisode}
-                            style={{
-                                display: "flex", alignItems: "center", gap: "8px",
-                                padding: "10px 20px", borderRadius: "10px",
-                                backgroundColor: prevEpisode ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.02)",
-                                border: `1px solid ${prevEpisode ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)"}`,
-                                color: prevEpisode ? "white" : "rgba(255,255,255,0.25)",
-                                cursor: prevEpisode ? "pointer" : "not-allowed",
-                                fontWeight: "700", fontSize: "0.85rem",
-                                transition: "all 0.2s",
-                                minWidth: "160px", justifyContent: "center",
-                            }}
-                            onMouseOver={e => { if (prevEpisode) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"; }}
-                            onMouseOut={e => { if (prevEpisode) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.07)"; }}
-                        >
-                            ← Anterior
-                            {prevEpisode && (
-                                <span style={{ fontSize: "0.75rem", opacity: 0.6, fontWeight: "400" }}>
-                                    S{prevEpisode.seasonNumber}E{prevEpisode.episodeNumber}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* Indicador episodio actual */}
-                        <div style={{ textAlign: "center", padding: "0 16px" }}>
-                            <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", fontWeight: "600", letterSpacing: "1px", textTransform: "uppercase" }}>
-                                Reproduciendo
-                            </div>
-                            <div style={{ fontSize: "0.9rem", color: "white", fontWeight: "700", marginTop: "2px" }}>
-                                {title}
-                            </div>
+                        {/* Fila superior: nombre serie + episodio identificador */}
+                        <div style={{
+                            fontSize: "0.72rem", fontWeight: "700", color: "rgba(255,255,255,0.4)",
+                            letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: "12px",
+                        }}>
+                            {seriesTitle} — {seasonNumber}x{String(episodeNumber).padStart(2, "0")}
                         </div>
 
-                        <button
-                            onClick={() => nextEpisode && router.push(`/watch/episode/${nextEpisode.id}`)}
-                            disabled={!nextEpisode}
-                            style={{
-                                display: "flex", alignItems: "center", gap: "8px",
-                                padding: "10px 20px", borderRadius: "10px",
-                                backgroundColor: nextEpisode ? "var(--primary)" : "rgba(255,255,255,0.02)",
-                                border: `1px solid ${nextEpisode ? "var(--primary)" : "rgba(255,255,255,0.05)"}`,
-                                color: nextEpisode ? "white" : "rgba(255,255,255,0.25)",
-                                cursor: nextEpisode ? "pointer" : "not-allowed",
-                                fontWeight: "700", fontSize: "0.85rem",
-                                transition: "all 0.2s",
-                                minWidth: "160px", justifyContent: "center",
-                                boxShadow: nextEpisode ? "0 4px 15px rgba(37,99,235,0.35)" : "none",
-                            }}
-                            onMouseOver={e => { if (nextEpisode) e.currentTarget.style.opacity = "0.85"; }}
-                            onMouseOut={e => { e.currentTarget.style.opacity = "1"; }}
-                        >
-                            {nextEpisode && (
-                                <span style={{ fontSize: "0.75rem", opacity: 0.8, fontWeight: "400" }}>
-                                    S{nextEpisode.seasonNumber}E{nextEpisode.episodeNumber}
-                                </span>
+                        {/* Fila principal: thumbnail + info + botones */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+
+                            {/* Miniatura */}
+                            {episodeThumbnail && (
+                                <div style={{
+                                    width: "140px", height: "79px", borderRadius: "8px",
+                                    overflow: "hidden", flexShrink: 0, backgroundColor: "#111",
+                                }}>
+                                    <img src={episodeThumbnail} alt={title}
+                                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                                </div>
                             )}
-                            Siguiente →
-                        </button>
+
+                            {/* Título del episodio */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                    fontSize: "1.5rem", fontWeight: "900", color: "white",
+                                    textTransform: "uppercase", letterSpacing: "1px", lineHeight: 1.1,
+                                }}>
+                                    Episodio {episodeNumber}
+                                </div>
+                                <div style={{
+                                    fontSize: "0.88rem", color: "rgba(255,255,255,0.6)", marginTop: "4px",
+                                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                }}>
+                                    {title}
+                                </div>
+                            </div>
+
+                            {/* ANTERIOR / SIGUIENTE */}
+                            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                                <button
+                                    onClick={() => prevEpisode && router.push(`/watch/episode/${prevEpisode.id}`)}
+                                    disabled={!prevEpisode}
+                                    style={{
+                                        padding: "8px 16px", borderRadius: "8px", fontWeight: "700",
+                                        fontSize: "0.78rem", letterSpacing: "0.5px", cursor: prevEpisode ? "pointer" : "not-allowed",
+                                        backgroundColor: "rgba(255,255,255,0.06)",
+                                        border: "1px solid rgba(255,255,255,0.12)",
+                                        color: prevEpisode ? "white" : "rgba(255,255,255,0.25)",
+                                        transition: "all 0.2s",
+                                    }}
+                                    onMouseOver={e => { if (prevEpisode) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"; }}
+                                    onMouseOut={e => { if (prevEpisode) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"; }}
+                                >
+                                    ← ANTERIOR
+                                </button>
+                                <button
+                                    onClick={() => nextEpisode && router.push(`/watch/episode/${nextEpisode.id}`)}
+                                    disabled={!nextEpisode}
+                                    style={{
+                                        padding: "8px 16px", borderRadius: "8px", fontWeight: "700",
+                                        fontSize: "0.78rem", letterSpacing: "0.5px", cursor: nextEpisode ? "pointer" : "not-allowed",
+                                        backgroundColor: nextEpisode ? "rgba(37,99,235,0.2)" : "rgba(255,255,255,0.04)",
+                                        border: `1px solid ${nextEpisode ? "rgba(37,99,235,0.4)" : "rgba(255,255,255,0.08)"}`,
+                                        color: nextEpisode ? "white" : "rgba(255,255,255,0.25)",
+                                        transition: "all 0.2s",
+                                    }}
+                                    onMouseOver={e => { if (nextEpisode) e.currentTarget.style.backgroundColor = "rgba(37,99,235,0.35)"; }}
+                                    onMouseOut={e => { if (nextEpisode) e.currentTarget.style.backgroundColor = "rgba(37,99,235,0.2)"; }}
+                                >
+                                    SIGUIENTE →
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
-                {/* Selección de servidor */}
-                {allServers.length > 1 && (
-                    <div>
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", fontWeight: "700", letterSpacing: "1px", textTransform: "uppercase", marginBottom: "12px" }}>
-                            Servidores disponibles
+                {/* SINOPSIS */}
+                {(episodeDescription || !isEpisode) && (
+                    <div style={{ marginBottom: "20px" }}>
+                        <h3 style={{
+                            fontSize: "0.75rem", fontWeight: "800", color: "rgba(255,255,255,0.9)",
+                            letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px",
+                        }}>
+                            Sinopsis
+                        </h3>
+                        <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", lineHeight: "1.6" }}>
+                            {episodeDescription || "No hay descripción disponible."}
                         </p>
-                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                    </div>
+                )}
+
+                {/* REPRODUCTOR */}
+                <div style={{ backgroundColor: "black", borderRadius: "10px", overflow: "hidden", lineHeight: 0 }}>
+                    <VideoPlayer src={activeServer.url} title={isEpisode ? `${seriesTitle} - Ep. ${episodeNumber}` : title} />
+                </div>
+
+                {/* Selector de servidores (solo si hay más de uno) */}
+                {allServers.length > 1 && (
+                    <div style={{ marginTop: "16px" }}>
+                        <p style={{
+                            fontSize: "0.7rem", fontWeight: "700", color: "rgba(255,255,255,0.35)",
+                            letterSpacing: "1px", textTransform: "uppercase", marginBottom: "10px",
+                        }}>
+                            Servidores
+                        </p>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                             {allServers.map((srv) => {
                                 const isActive = srv.id === activeServer.id;
                                 return (
@@ -189,27 +208,17 @@ export default function PlayerClient({
                                         key={srv.id}
                                         onClick={() => setActiveServer(srv)}
                                         style={{
-                                            display: "flex", alignItems: "center", gap: "8px",
-                                            padding: "10px 18px", borderRadius: "10px",
-                                            backgroundColor: isActive ? "rgba(37,99,235,0.15)" : "rgba(255,255,255,0.04)",
+                                            padding: "8px 16px", borderRadius: "8px",
+                                            backgroundColor: isActive ? "rgba(37,99,235,0.2)" : "rgba(255,255,255,0.04)",
                                             border: `1px solid ${isActive ? "rgba(37,99,235,0.4)" : "rgba(255,255,255,0.08)"}`,
-                                            color: isActive ? "white" : "rgba(255,255,255,0.6)",
-                                            cursor: "pointer", fontWeight: isActive ? "700" : "500",
-                                            fontSize: "0.85rem", transition: "all 0.2s",
+                                            color: isActive ? "white" : "rgba(255,255,255,0.5)",
+                                            cursor: "pointer", fontWeight: "700", fontSize: "0.82rem",
+                                            transition: "all 0.2s",
                                         }}
-                                        onMouseOver={e => { if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)"; }}
-                                        onMouseOut={e => { if (!isActive) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"; }}
                                     >
-                                        {isActive && <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "var(--primary)", display: "inline-block" }} />}
+                                        {isActive && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", backgroundColor: "#60a5fa", marginRight: 6 }} />}
                                         {srv.name}
-                                        <span style={{
-                                            fontSize: "0.65rem", fontWeight: "800", padding: "2px 6px",
-                                            borderRadius: "4px", letterSpacing: "0.5px",
-                                            backgroundColor: isActive ? "rgba(37,99,235,0.3)" : "rgba(255,255,255,0.08)",
-                                            color: isActive ? "#93c5fd" : "rgba(255,255,255,0.4)",
-                                        }}>
-                                            {srv.quality}
-                                        </span>
+                                        <span style={{ marginLeft: 6, fontSize: "0.65rem", opacity: 0.6 }}>{srv.quality}</span>
                                     </button>
                                 );
                             })}
