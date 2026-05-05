@@ -1,7 +1,10 @@
 import React from "react";
+import AuthBodyLock from "./AuthBodyLock";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
+        <>
+        <AuthBodyLock />
         <div style={{
             position: "fixed",
             inset: 0,
@@ -67,5 +70,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 {children}
             </div>
         </div>
+        </>
     );
 }
