@@ -113,34 +113,44 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                                     Próximamente
                                 </span>
                             )
-                        ) : movie.servers.length > 0 ? (
-                            // Multiple servers: show a button per server
-                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "rgba(255,255,255,0.35)", letterSpacing: "1px", textTransform: "uppercase" }}>
-                                    Servidores disponibles
-                                </span>
-                                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                                    {movie.servers.map((srv) => (
-                                        <Link
-                                            key={srv.id}
-                                            href={`/watch/${movie.id}?s=${srv.id}`}
-                                            className="server-btn"
-                                        >
-                                            ▶ {srv.name}
-                                            <span className="server-btn-quality">{srv.quality}</span>
-                                        </Link>
-                                    ))}
+                        ) : (() => {
+                            // Build the list of servers to display.
+                            // If dedicated servers exist use them; otherwise fall back to the movie's videoUrl.
+                            const displayServers = movie.servers.length > 0
+                                ? movie.servers.map(s => ({
+                                    id: s.id,
+                                    name: s.name,
+                                    quality: s.quality,
+                                    href: `/watch/${movie.id}?s=${s.id}`,
+                                }))
+                                : movie.videoUrl
+                                    ? [{ id: "default", name: "Servidor 1", quality: "Auto", href: `/watch/${movie.id}` }]
+                                    : [];
+
+                            if (displayServers.length === 0) {
+                                return (
+                                    <span style={{ color: "#64748b", fontSize: "0.9rem", padding: "0.9rem 0" }}>
+                                        Próximamente
+                                    </span>
+                                );
+                            }
+
+                            return (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "rgba(255,255,255,0.35)", letterSpacing: "1px", textTransform: "uppercase" }}>
+                                        Servidores disponibles
+                                    </span>
+                                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                                        {displayServers.map((srv) => (
+                                            <Link key={srv.id} href={srv.href} className="server-btn">
+                                                ▶ {srv.name}
+                                                <span className="server-btn-quality">{srv.quality}</span>
+                                            </Link>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <Link
-                                href={`/watch/${movie.id}`}
-                                className="btn btn-primary"
-                                style={{ padding: "0.9rem 2.5rem", fontSize: "1rem" }}
-                            >
-                                ▶ Ver ahora
-                            </Link>
-                        )}
+                            );
+                        })()}
                         <AddToListButton movieId={movie.id} />
                     </div>
                 </div>
