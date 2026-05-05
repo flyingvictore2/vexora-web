@@ -3,6 +3,10 @@
 import React, { useState } from "react";
 import Link from "next/link";
 
+const INDIGO = "#6366f1";
+const INDIGO_DARK = "#4f46e5";
+const INDIGO_GLOW = "rgba(99,102,241,0.35)";
+
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
     const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -11,20 +15,14 @@ export default function ForgotPasswordPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus("loading");
-
         try {
             const res = await fetch("/api/auth/forgot-password", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email }),
             });
-
             const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || "Usa un correo válido");
-            }
-
+            if (!res.ok) throw new Error(data.error || "Usa un correo válido");
             setStatus("success");
             setMessage(data.message);
         } catch (err: any) {
@@ -33,62 +31,139 @@ export default function ForgotPasswordPage() {
         }
     };
 
+    const inputBase: React.CSSProperties = {
+        width: "100%",
+        padding: "14px 16px",
+        backgroundColor: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: "10px",
+        color: "white",
+        fontSize: "15px",
+        outline: "none",
+        fontFamily: "inherit",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+    };
+
     return (
         <div style={{
-            backgroundColor: "#111827",
-            padding: "40px",
-            borderRadius: "12px",
+            backgroundColor: "rgba(10,10,20,0.85)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            padding: "40px 44px 36px",
+            borderRadius: "20px",
             color: "white",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-            border: "1px solid rgba(255,255,255,0.05)",
-            maxWidth: "400px",
-            width: "100%",
-            margin: "0 auto",
-            marginTop: "10vh"
+            border: "1px solid rgba(99,102,241,0.2)",
+            boxShadow: `0 0 0 1px rgba(99,102,241,0.08), 0 32px 64px rgba(0,0,0,0.6), 0 0 80px rgba(99,102,241,0.06)`,
         }}>
-            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                <div style={{ fontSize: '28px', fontWeight: '800', marginBottom: '10px' }}>
-                    <span style={{ color: '#2563eb', marginRight: '8px' }}>●</span> Series.ly
+
+            {/* Logo VEXORA */}
+            <div style={{ textAlign: "center", marginBottom: "32px" }}>
+                <div style={{
+                    fontSize: "2.2rem",
+                    fontWeight: 900,
+                    letterSpacing: "4px",
+                    background: `linear-gradient(135deg, #a5b4fc 0%, ${INDIGO} 50%, #7c3aed 100%)`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    marginBottom: "4px",
+                    lineHeight: 1,
+                }}>
+                    VEXORA
                 </div>
-                <h2 style={{ fontSize: "20px", fontWeight: "700", opacity: 0.9 }}>Recuperar Contraseña</h2>
-                <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "8px" }}>
-                    Introduce tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.
-                </p>
+                <div style={{
+                    width: "40px",
+                    height: "2px",
+                    background: `linear-gradient(90deg, transparent, ${INDIGO}, transparent)`,
+                    margin: "10px auto 0",
+                    borderRadius: "2px",
+                }} />
             </div>
 
+            <h2 style={{
+                fontSize: "18px",
+                fontWeight: 600,
+                marginBottom: "8px",
+                color: "rgba(255,255,255,0.85)",
+                textAlign: "center",
+                letterSpacing: "0.3px",
+            }}>
+                Recuperar contraseña
+            </h2>
+            <p style={{
+                fontSize: "13px",
+                color: "#6b7280",
+                textAlign: "center",
+                marginBottom: "28px",
+                lineHeight: 1.5,
+            }}>
+                Introduce tu email y te enviaremos un enlace para restablecer tu contraseña.
+            </p>
+
             {status === "success" ? (
-                <div style={{
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    textAlign: 'center'
-                }}>
-                    <div style={{ color: '#10b981', fontSize: '24px', marginBottom: '8px' }}>✉️</div>
-                    <p style={{ fontSize: '14px', color: '#10b981', fontWeight: '600', marginBottom: '16px' }}>{message}</p>
-                    <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '20px' }}>Revisa también tu bandeja de spam si no lo encuentras.</p>
-                    <Link href="/auth/login" className="btn btn-primary" style={{ display: 'block', padding: '12px', borderRadius: '8px', textDecoration: 'none' }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                    <div style={{
+                        background: "rgba(16,185,129,0.08)",
+                        border: "1px solid rgba(16,185,129,0.2)",
+                        borderRadius: "12px",
+                        padding: "20px",
+                        textAlign: "center",
+                        width: "100%",
+                    }}>
+                        <div style={{ fontSize: "28px", marginBottom: "10px" }}>✉️</div>
+                        <p style={{ fontSize: "14px", color: "#10b981", fontWeight: 600, marginBottom: "8px" }}>{message}</p>
+                        <p style={{ fontSize: "12px", color: "#6b7280" }}>Revisa también tu carpeta de spam.</p>
+                    </div>
+                    <Link href="/auth/login" style={{
+                        width: "100%",
+                        padding: "14px",
+                        background: `linear-gradient(135deg, ${INDIGO} 0%, #7c3aed 100%)`,
+                        borderRadius: "10px",
+                        color: "white",
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        textAlign: "center",
+                        textDecoration: "none",
+                        letterSpacing: "0.8px",
+                        textTransform: "uppercase",
+                        boxShadow: `0 4px 20px rgba(99,102,241,0.4)`,
+                        display: "block",
+                    }}>
                         Volver al inicio de sesión
                     </Link>
                 </div>
             ) : (
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                    {status === "error" && <div style={{ background: "rgba(239, 68, 68, 0.1)", color: '#ef4444', padding: "12px", borderRadius: "8px", fontSize: "13px", border: '1px solid rgba(239, 68, 68, 0.2)' }}>{message}</div>}
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {status === "error" && (
+                        <div style={{
+                            background: "rgba(239,68,68,0.08)",
+                            color: "#fca5a5",
+                            padding: "11px 14px",
+                            borderRadius: "8px",
+                            fontSize: "13px",
+                            border: "1px solid rgba(239,68,68,0.2)",
+                        }}>
+                            {message}
+                        </div>
+                    )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8' }}>CORREO ELECTRÓNICO</label>
+                    <div>
+                        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: "#6b7280", marginBottom: "7px", letterSpacing: "0.8px", textTransform: "uppercase" }}>
+                            Email
+                        </label>
                         <input
                             type="email"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="ejemplo@correo.com"
-                            style={{
-                                width: "100%",
-                                padding: "12px",
-                                backgroundColor: "#1f2937",
-                                border: "1px solid rgba(255,255,255,0.1)",
-                                borderRadius: "8px",
-                                color: "white",
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder="tu@email.com"
+                            style={inputBase}
+                            onFocus={e => {
+                                e.currentTarget.style.borderColor = INDIGO;
+                                e.currentTarget.style.boxShadow = `0 0 0 3px ${INDIGO_GLOW}`;
+                            }}
+                            onBlur={e => {
+                                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                                e.currentTarget.style.boxShadow = "none";
                             }}
                             required
                         />
@@ -97,21 +172,38 @@ export default function ForgotPasswordPage() {
                     <button
                         type="submit"
                         disabled={status === "loading"}
-                        className="btn btn-primary"
                         style={{
+                            width: "100%",
                             padding: "14px",
+                            background: status === "loading"
+                                ? INDIGO_DARK
+                                : `linear-gradient(135deg, ${INDIGO} 0%, #7c3aed 100%)`,
+                            border: "none",
+                            borderRadius: "10px",
+                            color: "white",
                             fontSize: "14px",
-                            borderRadius: "8px",
-                            marginTop: "10px",
-                            opacity: status === "loading" ? 0.7 : 1
+                            fontWeight: 700,
+                            cursor: status === "loading" ? "not-allowed" : "pointer",
+                            marginTop: "4px",
+                            letterSpacing: "0.8px",
+                            fontFamily: "inherit",
+                            transition: "opacity 0.2s, transform 0.1s",
+                            boxShadow: status === "loading" ? "none" : `0 4px 20px rgba(99,102,241,0.4)`,
+                            textTransform: "uppercase",
                         }}
+                        onMouseEnter={e => { if (status !== "loading") e.currentTarget.style.opacity = "0.9"; }}
+                        onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+                        onMouseDown={e => { if (status !== "loading") e.currentTarget.style.transform = "scale(0.98)"; }}
+                        onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
                     >
-                        {status === "loading" ? "ENVIANDO..." : "ENVIAR ENLACE"}
+                        {status === "loading" ? "Enviando..." : "Enviar enlace"}
                     </button>
 
-                    <div style={{ textAlign: 'center', marginTop: "10px", fontSize: '12px', color: '#94a3b8' }}>
-                        <Link href="/auth/login" style={{ color: "#2563eb", fontWeight: "600" }}>Volver a iniciar sesión</Link>
-                    </div>
+                    <p style={{ textAlign: "center", marginTop: "8px", fontSize: "13px", color: "#4b5563" }}>
+                        <Link href="/auth/login" style={{ color: "#a5b4fc", fontWeight: 700 }}>
+                            Volver a iniciar sesión
+                        </Link>
+                    </p>
                 </form>
             )}
         </div>
