@@ -12,6 +12,39 @@ interface VideoPlayerProps {
     onProgressUpdate?: (progress: number) => void;
 }
 
+/** Convert watch-page URLs to their direct embed equivalents */
+function normalizeEmbedUrl(url: string): string {
+    try {
+        const u = new URL(url);
+        const host = u.hostname.replace(/^www\./, "");
+
+        // voe.sx  →  /e/hash
+        if (host === "voe.sx" && !u.pathname.startsWith("/e/")) {
+            return `https://voe.sx/e${u.pathname}${u.search}`;
+        }
+        // streamtape  →  /e/hash
+        if (host === "streamtape.com" && u.pathname.startsWith("/v/")) {
+            return url.replace("/v/", "/e/");
+        }
+        // doodstream / dood.watch  →  /e/hash
+        if ((host === "doodstream.com" || host === "dood.watch" || host === "dood.yt")
+            && u.pathname.startsWith("/d/")) {
+            return url.replace("/d/", "/e/");
+        }
+        // filemoon  →  /e/hash
+        if (host.includes("filemoon") && !u.pathname.startsWith("/e/")) {
+            return `https://${host}/e${u.pathname}${u.search}`;
+        }
+        // vidmoly  →  /e/hash
+        if (host === "vidmoly.to" && !u.pathname.startsWith("/e/")) {
+            return `https://vidmoly.to/e${u.pathname}${u.search}`;
+        }
+    } catch {
+        // invalid URL — return as-is
+    }
+    return url;
+}
+
 export default function VideoPlayer({ src, title, onProgressUpdate }: VideoPlayerProps) {
     const router = useRouter();
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -24,14 +57,21 @@ export default function VideoPlayer({ src, title, onProgressUpdate }: VideoPlaye
     const controlsTimeoutRef = useRef<any>(null);
     const lastSavedTimeRef = useRef<number>(0);
 
+    // Normalize URL first (converts watch-page URLs to embed URLs)
+    const normalizedSrc = normalizeEmbedUrl(src);
+
     // Detect if the src is an embed (iframe)
-    const isEmbed = src.includes("http") && (
-        src.includes("/e/") ||
-        src.includes("embed") ||
-        src.includes("voe.sx") ||
-        src.includes("ok.ru") ||
-        src.includes("youtube.com") ||
-        !src.match(/\.(mp4|m3u8|webm|mkv|mov|avi)$/)
+    const isEmbed = normalizedSrc.includes("http") && (
+        normalizedSrc.includes("/e/") ||
+        normalizedSrc.includes("embed") ||
+        normalizedSrc.includes("voe.sx") ||
+        normalizedSrc.includes("ok.ru") ||
+        normalizedSrc.includes("youtube.com") ||
+        normalizedSrc.includes("doodstream") ||
+        normalizedSrc.includes("streamtape") ||
+        normalizedSrc.includes("filemoon") ||
+        normalizedSrc.includes("vidmoly") ||
+        !normalizedSrc.match(/\.(mp4|m3u8|webm|mkv|mov|avi)$/)
     );
 
     const togglePlay = () => {
@@ -140,7 +180,7 @@ export default function VideoPlayer({ src, title, onProgressUpdate }: VideoPlaye
         <div className={styles.container} onMouseMove={handleMouseMove}>
             {isEmbed ? (
                 <iframe
-                    src={src}
+                    src={normalizedSrc}
                     className={styles.video}
                     style={{ border: "none" }}
                     allowFullScreen
@@ -150,7 +190,7 @@ export default function VideoPlayer({ src, title, onProgressUpdate }: VideoPlaye
                 <video
                     ref={videoRef}
                     className={styles.video}
-                    src={src}
+                    src={normalizedSrc}
                     onClick={togglePlay}
                     onTimeUpdate={handleTimeUpdate}
                     onPause={handlePause}
