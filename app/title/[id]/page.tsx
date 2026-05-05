@@ -124,26 +124,10 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                                         <Link
                                             key={srv.id}
                                             href={`/watch/${movie.id}?s=${srv.id}`}
-                                            style={{
-                                                display: "inline-flex", alignItems: "center", gap: "8px",
-                                                padding: "0.75rem 1.6rem",
-                                                backgroundColor: "rgba(229,9,20,0.9)",
-                                                color: "white", textDecoration: "none",
-                                                borderRadius: "8px", fontWeight: "800",
-                                                fontSize: "0.88rem", letterSpacing: "0.5px",
-                                                transition: "background 0.2s, transform 0.1s",
-                                                border: "1px solid rgba(255,255,255,0.1)",
-                                            }}
-                                            onMouseOver={(e: any) => e.currentTarget.style.backgroundColor = "rgba(229,9,20,1)"}
-                                            onMouseOut={(e: any) => e.currentTarget.style.backgroundColor = "rgba(229,9,20,0.9)"}
+                                            className="server-btn"
                                         >
                                             ▶ {srv.name}
-                                            <span style={{
-                                                fontSize: "0.65rem", fontWeight: "700",
-                                                padding: "2px 7px", borderRadius: "4px",
-                                                backgroundColor: "rgba(0,0,0,0.35)",
-                                                letterSpacing: "0.3px",
-                                            }}>{srv.quality}</span>
+                                            <span className="server-btn-quality">{srv.quality}</span>
                                         </Link>
                                     ))}
                                 </div>
@@ -199,7 +183,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                                         href={`/watch/episode/${ep.id}`}
                                         style={{ textDecoration: "none" }}
                                     >
-                                        <div style={{
+                                        <div className="ep-row" style={{
                                             display: "flex", alignItems: "center", gap: "16px",
                                             padding: "14px 20px",
                                             backgroundColor: "rgba(255,255,255,0.03)",
@@ -207,16 +191,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                                             borderRadius: "12px",
                                             transition: "all 0.2s",
                                             cursor: "pointer",
-                                        }}
-                                            onMouseOver={(e) => {
-                                                (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.07)";
-                                                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(37,99,235,0.3)";
-                                            }}
-                                            onMouseOut={(e) => {
-                                                (e.currentTarget as HTMLDivElement).style.backgroundColor = "rgba(255,255,255,0.03)";
-                                                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.06)";
-                                            }}
-                                        >
+                                        }}>
                                             {/* Miniatura */}
                                             <div style={{
                                                 width: "120px", height: "68px", borderRadius: "8px",
@@ -296,6 +271,39 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                     ))}
                 </div>
             )}
+        <style dangerouslySetInnerHTML={{ __html: `
+            .ep-row:hover {
+                background-color: rgba(255,255,255,0.07) !important;
+                border-color: rgba(37,99,235,0.3) !important;
+            }
+            .server-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 0.75rem 1.6rem;
+                background-color: rgba(229,9,20,0.85);
+                color: white;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 800;
+                font-size: 0.88rem;
+                letter-spacing: 0.5px;
+                transition: background 0.2s, transform 0.15s;
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+            .server-btn:hover {
+                background-color: rgba(229,9,20,1);
+                transform: scale(1.03);
+            }
+            .server-btn-quality {
+                font-size: 0.65rem;
+                font-weight: 700;
+                padding: 2px 7px;
+                border-radius: 4px;
+                background-color: rgba(0,0,0,0.35);
+                letter-spacing: 0.3px;
+            }
+        `}} />
         </div>
     );
 }
