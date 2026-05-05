@@ -308,6 +308,48 @@ export default function Navbar() {
                                         </Link>
                                     </div>
 
+                                    {/* Social Section */}
+                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '8px 0' }}>
+                                        <div style={{ padding: '6px 20px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: '800', color: 'rgba(255,255,255,0.3)', letterSpacing: '1.2px', textTransform: 'uppercase' }}>
+                                                Social
+                                            </span>
+                                            <span style={{
+                                                fontSize: '9px',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.8px',
+                                                textTransform: 'uppercase',
+                                                background: 'linear-gradient(135deg, #6366f1, #7c3aed)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                                backgroundClip: 'text',
+                                            }}>
+                                                Próximamente
+                                            </span>
+                                        </div>
+                                        <div style={{ padding: '0 20px 4px', display: 'flex', gap: '8px' }}>
+                                            {[
+                                                { icon: '👥', label: 'Amigos' },
+                                                { icon: '💬', label: 'Chat' },
+                                                { icon: '🎉', label: 'Watch Party' },
+                                            ].map(item => (
+                                                <div key={item.label} style={{
+                                                    flex: 1,
+                                                    padding: '8px 4px',
+                                                    backgroundColor: 'rgba(99,102,241,0.06)',
+                                                    border: '1px solid rgba(99,102,241,0.12)',
+                                                    borderRadius: '8px',
+                                                    textAlign: 'center',
+                                                    opacity: 0.5,
+                                                    cursor: 'not-allowed',
+                                                }}>
+                                                    <div style={{ fontSize: '16px', marginBottom: '3px' }}>{item.icon}</div>
+                                                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: '0.3px' }}>{item.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
                                     {/* Logout Section */}
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '8px 0' }}>
                                         <button
