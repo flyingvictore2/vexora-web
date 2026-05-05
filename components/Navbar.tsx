@@ -11,6 +11,7 @@ export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [showSocial, setShowSocial] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isDark, setIsDark] = useState(true);
     const [siteName, setSiteName] = useState("Vexora");
@@ -309,45 +310,75 @@ export default function Navbar() {
                                     </div>
 
                                     {/* Social Section */}
-                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '8px 0' }}>
-                                        <div style={{ padding: '6px 20px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: '10px', fontWeight: '800', color: 'rgba(255,255,255,0.3)', letterSpacing: '1.2px', textTransform: 'uppercase' }}>
-                                                Social
+                                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                        {/* Header — clickable to expand/collapse */}
+                                        <button
+                                            onClick={() => setShowSocial(v => !v)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '11px 20px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ fontSize: '13px' }}>🌐</span>
+                                                <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Social</span>
+                                                <span style={{
+                                                    fontSize: '9px',
+                                                    fontWeight: '800',
+                                                    letterSpacing: '0.6px',
+                                                    textTransform: 'uppercase',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(124,58,237,0.25))',
+                                                    border: '1px solid rgba(99,102,241,0.3)',
+                                                    color: '#a5b4fc',
+                                                }}>
+                                                    Próximamente
+                                                </span>
                                             </span>
                                             <span style={{
-                                                fontSize: '9px',
-                                                fontWeight: '800',
-                                                letterSpacing: '0.8px',
-                                                textTransform: 'uppercase',
-                                                background: 'linear-gradient(135deg, #6366f1, #7c3aed)',
-                                                WebkitBackgroundClip: 'text',
-                                                WebkitTextFillColor: 'transparent',
-                                                backgroundClip: 'text',
-                                            }}>
-                                                Próximamente
-                                            </span>
-                                        </div>
-                                        <div style={{ padding: '0 20px 4px', display: 'flex', gap: '8px' }}>
-                                            {[
-                                                { icon: '👥', label: 'Amigos' },
-                                                { icon: '💬', label: 'Chat' },
-                                                { icon: '🎉', label: 'Watch Party' },
-                                            ].map(item => (
-                                                <div key={item.label} style={{
-                                                    flex: 1,
-                                                    padding: '8px 4px',
-                                                    backgroundColor: 'rgba(99,102,241,0.06)',
-                                                    border: '1px solid rgba(99,102,241,0.12)',
-                                                    borderRadius: '8px',
-                                                    textAlign: 'center',
-                                                    opacity: 0.5,
-                                                    cursor: 'not-allowed',
-                                                }}>
-                                                    <div style={{ fontSize: '16px', marginBottom: '3px' }}>{item.icon}</div>
-                                                    <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: '0.3px' }}>{item.label}</div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                                fontSize: '10px',
+                                                color: 'rgba(255,255,255,0.3)',
+                                                transition: 'transform 0.2s',
+                                                display: 'inline-block',
+                                                transform: showSocial ? 'rotate(180deg)' : 'rotate(0deg)',
+                                            }}>▼</span>
+                                        </button>
+
+                                        {/* Submenu items */}
+                                        {showSocial && (
+                                            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', paddingBottom: '4px' }}>
+                                                {[
+                                                    { icon: '👥', label: 'Amigos' },
+                                                    { icon: '💬', label: 'Chat' },
+                                                    { icon: '🎉', label: 'Watch Party' },
+                                                ].map(item => (
+                                                    <div
+                                                        key={item.label}
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            padding: '9px 20px 9px 36px',
+                                                            opacity: 0.45,
+                                                            cursor: 'not-allowed',
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '13px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            <span>{item.icon}</span>
+                                                            {item.label}
+                                                        </span>
+                                                        <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: '700' }}>PRONTO</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Logout Section */}
