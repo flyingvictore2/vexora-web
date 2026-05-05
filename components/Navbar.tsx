@@ -14,7 +14,6 @@ export default function Navbar() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isDark, setIsDark] = useState(true);
     const [siteName, setSiteName] = useState("Vexora");
-    const [isGuest, setIsGuest] = useState(false);
     const [sections, setSections] = useState({
         movies: true, series: true, animes: true, list: true,
         calendar: true, requests: true, support: true, plans: true, search: true,
@@ -29,9 +28,6 @@ export default function Navbar() {
             setIsDark(false);
             document.body.classList.add("light-theme");
         }
-
-        // Check guest cookie
-        setIsGuest(document.cookie.split(";").some(c => c.trim() === "vexora_guest=1"));
 
         fetch("/api/config")
             .then(r => r.json())
@@ -114,11 +110,6 @@ export default function Navbar() {
         await signOut({ callbackUrl: "/auth/login" });
     };
 
-    const handleGuestExit = async () => {
-        await fetch("/api/auth/guest", { method: "DELETE" });
-        router.push("/auth/login");
-    };
-
     return (
         <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ""}`}>
             <div className={styles.container}>
@@ -134,7 +125,7 @@ export default function Navbar() {
                         {sections.movies   && <Link href="/movies"   className={pathname === '/movies'   ? styles.active : ''}>PELÍCULAS</Link>}
                         {sections.series   && <Link href="/series"   className={pathname === '/series'   ? styles.active : ''}>SERIES</Link>}
                         {sections.animes   && <Link href="/animes"   className={pathname === '/animes'   ? styles.active : ''}>ANIMES</Link>}
-                        {sections.list     && !isGuest && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>LISTAS</Link>}
+                        {sections.list     && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>LISTAS</Link>}
                         {sections.calendar && <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>CALENDARIO</Link>}
                         {sections.requests && <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>SOLICITUDES</Link>}
                         {sections.support  && <Link href="/support"  className={pathname === '/support'  ? styles.active : ''}>SOPORTE</Link>}
@@ -227,32 +218,7 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {isGuest ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{
-                                fontSize: "12px", fontWeight: "700", color: "rgba(255,255,255,0.45)",
-                                padding: "4px 10px", borderRadius: "6px",
-                                border: "1px solid rgba(255,255,255,0.1)",
-                                backgroundColor: "rgba(255,255,255,0.04)",
-                            }}>🎭 Invitado</span>
-                            <Link href="/auth/login" style={{
-                                padding: "6px 14px", borderRadius: "7px", fontSize: "12px", fontWeight: "700",
-                                backgroundColor: "var(--primary)", color: "white", textDecoration: "none",
-                            }}>
-                                Iniciar sesión
-                            </Link>
-                            <button
-                                onClick={handleGuestExit}
-                                style={{
-                                    fontSize: "11px", color: "rgba(255,255,255,0.35)", background: "none",
-                                    border: "none", cursor: "pointer", fontWeight: "600",
-                                }}
-                                title="Salir de la sesión de invitado"
-                            >
-                                Salir
-                            </button>
-                        </div>
-                    ) : session ? (
+                    {session ? (
                         <div style={{ position: 'relative' }}>
                             <div
                                 className={styles.profile}

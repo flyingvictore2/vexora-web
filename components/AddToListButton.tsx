@@ -23,7 +23,6 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
     const [createError, setCreateError] = useState<string | null>(null);
     const [profileId, setProfileId] = useState<string | null>(null);
     const [savingId, setSavingId] = useState<string | null>(null);
-    const [isGuest, setIsGuest] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     const isInAnyList = lists.some(l => l.items.some(i => i.movieId === movieId));
@@ -31,7 +30,6 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
     useEffect(() => {
         const id = localStorage.getItem("selectedProfileId");
         setProfileId(id);
-        setIsGuest(document.cookie.split(";").some(c => c.trim() === "vexora_guest=1"));
     }, []);
 
     useEffect(() => {
@@ -134,32 +132,6 @@ export default function AddToListButton({ movieId, minimal }: AddToListButtonPro
         color: "white", fontSize: "0.95rem", cursor: "pointer",
         transition: "all 0.2s", display: "flex", alignItems: "center", gap: "8px",
     };
-
-    // Guest mode: show a "sign in" prompt instead
-    if (isGuest) {
-        return (
-            <a href="/auth/login" style={{
-                ...(minimal ? {
-                    width: "36px", height: "36px", borderRadius: "50%",
-                    border: "2px solid rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(0,0,0,0.4)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    flexShrink: 0,
-                } : {
-                    padding: "0.8rem 2rem", borderRadius: "8px", fontWeight: "700",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(255,255,255,0.05)",
-                    display: "flex", alignItems: "center", gap: "8px",
-                }),
-                color: "rgba(255,255,255,0.4)", textDecoration: "none",
-                fontSize: minimal ? "1rem" : "0.95rem",
-            }}
-            title="Inicia sesión para añadir a listas"
-            >
-                {minimal ? "🔒" : "🔒 Inicia sesión para añadir"}
-            </a>
-        );
-    }
 
     return (
         <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
