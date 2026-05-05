@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import VideoPlayer from "./VideoPlayer";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,6 +35,16 @@ interface PlayerClientProps {
     nextEpisode?: EpisodeInfo | null;
 }
 
+const isEmbedUrl = (url: string) =>
+    url.includes("http") && (
+        url.includes("/e/") ||
+        url.includes("embed") ||
+        url.includes("voe.sx") ||
+        url.includes("ok.ru") ||
+        url.includes("youtube.com") ||
+        !url.match(/\.(mp4|m3u8|webm|mkv|mov|avi)$/)
+    );
+
 export default function PlayerClient({
     title,
     defaultUrl,
@@ -56,6 +66,44 @@ export default function PlayerClient({
     const [activeServer, setActiveServer] = useState<VideoServer>(allServers[0]);
 
     const backHref = isEpisode && movieId ? `/title/${movieId}` : "/";
+
+    // ── Watch history tracking ──────────────────────────────────────────
+    const [profileId, setProfileId] = useState<string | null>(null);
+    const lastSavedProgressRef = useRef<number>(-1);
+
+    useEffect(() => {
+        setProfileId(localStorage.getItem("selectedProfileId"));
+    }, []);
+
+    const saveProgress = useCallback(async (progress: number) => {
+        if (!movieId || !profileId) return;
+        // Don't spam the API with duplicate values
+        if (progress === lastSavedProgressRef.current) return;
+        lastSavedProgressRef.current = progress;
+        try {
+            await fetch("/api/watchhistory", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ profileId, movieId, progress }),
+            });
+        } catch (e) {
+            // Silent fail — non-critical
+        }
+    }, [movieId, profileId]);
+
+    // For embed iframes: estimate progress by elapsed watch time
+    useEffect(() => {
+        if (!movieId || !profileId) return;
+        if (!isEmbedUrl(activeServer.url)) return;
+        let elapsed = 0;
+        const interval = setInterval(() => {
+            elapsed += 10;
+            if (elapsed >= 30 && elapsed < 60) saveProgress(10);
+            else if (elapsed >= 60 && elapsed < 300) saveProgress(30);
+            else if (elapsed >= 300) saveProgress(60);
+        }, 10_000);
+        return () => clearInterval(interval);
+    }, [movieId, profileId, activeServer.url, saveProgress]);
 
     return (
         <div style={{ backgroundColor: "#0a0b10", minHeight: "100vh", paddingBottom: "3rem" }}>
@@ -188,7 +236,11 @@ export default function PlayerClient({
 
                 {/* REPRODUCTOR */}
                 <div style={{ backgroundColor: "black", borderRadius: "10px", overflow: "hidden", lineHeight: 0 }}>
-                    <VideoPlayer src={activeServer.url} title={isEpisode ? `${seriesTitle} - Ep. ${episodeNumber}` : title} />
+                    <VideoPlayer
+                        src={activeServer.url}
+                        title={isEpisode ? `${seriesTitle} - Ep. ${episodeNumber}` : title}
+                        onProgressUpdate={saveProgress}
+                    />
                 </div>
 
                 {/* Selector de servidores (solo si hay más de uno) */}

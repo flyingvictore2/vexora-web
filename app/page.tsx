@@ -7,11 +7,28 @@ import Row from "@/components/Row";
 import Hero from "@/components/Hero";
 import axios from "axios";
 
+interface WatchHistoryItem {
+    id: string;
+    movieId: string;
+    progress: number;
+    title: string;
+    thumbnailUrl: string;
+    type: string;
+    genre: string;
+    rating: string;
+    year: number;
+    requiredPlan: string;
+    description: string;
+    videoUrl: string;
+    duration: string;
+}
+
 export default function Home() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const [movies, setMovies] = useState<any[]>([]);
     const [recommendations, setRecommendations] = useState<any[]>([]);
+    const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -29,12 +46,14 @@ export default function Home() {
 
     const fetchContent = async (profileId: string) => {
         try {
-            const [moviesRes, recommendationsRes] = await Promise.all([
+            const [moviesRes, recommendationsRes, historyRes] = await Promise.all([
                 axios.get("/api/movies"),
-                axios.get(`/api/movies/recommendations?profileId=${profileId}`)
+                axios.get(`/api/movies/recommendations?profileId=${profileId}`),
+                axios.get(`/api/watchhistory?profileId=${profileId}`),
             ]);
             setMovies(moviesRes.data);
             setRecommendations(recommendationsRes.data);
+            setWatchHistory(historyRes.data || []);
         } catch (error) {
             console.error(error);
         } finally {
@@ -73,6 +92,18 @@ export default function Home() {
     const anime = movies.filter(m => m.type === "ANIME").slice(0, 18);
     const recomendados = (recommendations.length > 0 ? recommendations : movies).slice(0, 18);
 
+    // Watch history rows
+    const continueWatching = watchHistory
+        .filter(h => h.progress > 0 && h.progress < 95)
+        .slice(0, 18);
+    const watchAgain = watchHistory
+        .filter(h => h.progress >= 95)
+        .slice(0, 18);
+
+    // Progress map for the Row component (movieId -> progress%)
+    const progressMap: Record<string, number> = {};
+    watchHistory.forEach(h => { progressMap[h.id || h.movieId] = h.progress; });
+
     return (
         <div style={{ paddingBottom: "3rem" }}>
             {/* Hero banner */}
@@ -86,6 +117,12 @@ export default function Home() {
 
             {/* Secciones principales */}
             <div style={{ marginTop: heroMovie ? '-4rem' : '0', position: 'relative', zIndex: 2 }}>
+                {continueWatching.length > 0 && (
+                    <Row title="Seguir viendo" movies={continueWatching} progressMap={progressMap} />
+                )}
+                {watchAgain.length > 0 && (
+                    <Row title="Volver a ver" movies={watchAgain} progressMap={progressMap} />
+                )}
                 <Row title="Novedades" movies={novedades} isLargeRow />
                 <Row title="Películas" movies={peliculas} />
                 <Row title="Series" movies={series} />

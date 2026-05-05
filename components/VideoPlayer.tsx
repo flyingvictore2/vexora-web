@@ -9,9 +9,10 @@ import { useRouter } from "next/navigation";
 interface VideoPlayerProps {
     src: string;
     title: string;
+    onProgressUpdate?: (progress: number) => void;
 }
 
-export default function VideoPlayer({ src, title }: VideoPlayerProps) {
+export default function VideoPlayer({ src, title, onProgressUpdate }: VideoPlayerProps) {
     const router = useRouter();
     const videoRef = useRef<HTMLVideoElement>(null);
     const [playing, setPlaying] = useState(false);
@@ -21,6 +22,7 @@ export default function VideoPlayer({ src, title }: VideoPlayerProps) {
     const [activeModal, setActiveModal] = useState<"none" | "audio" | "quality">("none");
     const [toast, setToast] = useState("");
     const controlsTimeoutRef = useRef<any>(null);
+    const lastSavedTimeRef = useRef<number>(0);
 
     // Detect if the src is an embed (iframe)
     const isEmbed = src.includes("http") && (
@@ -48,14 +50,35 @@ export default function VideoPlayer({ src, title }: VideoPlayerProps) {
         if (videoRef.current) {
             const current = videoRef.current.currentTime;
             const duration = videoRef.current.duration;
-            setProgress((current / duration) * 100);
+            if (!duration || isNaN(duration)) return;
+            const pct = (current / duration) * 100;
+            setProgress(pct);
 
             if (current > 5 && current < 90) {
                 setShowSkipIntro(true);
             } else {
                 setShowSkipIntro(false);
             }
+
+            // Report progress to parent every 15 seconds of playback
+            if (onProgressUpdate && current - lastSavedTimeRef.current >= 15) {
+                lastSavedTimeRef.current = current;
+                onProgressUpdate(Math.round(pct));
+            }
         }
+    };
+
+    const handlePause = () => {
+        if (videoRef.current && onProgressUpdate) {
+            const dur = videoRef.current.duration;
+            if (dur && !isNaN(dur)) {
+                onProgressUpdate(Math.round((videoRef.current.currentTime / dur) * 100));
+            }
+        }
+    };
+
+    const handleEnded = () => {
+        if (onProgressUpdate) onProgressUpdate(100);
     };
 
     const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +153,8 @@ export default function VideoPlayer({ src, title }: VideoPlayerProps) {
                     src={src}
                     onClick={togglePlay}
                     onTimeUpdate={handleTimeUpdate}
+                    onPause={handlePause}
+                    onEnded={handleEnded}
                     autoPlay
                 />
             )}

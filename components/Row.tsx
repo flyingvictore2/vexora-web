@@ -21,9 +21,10 @@ interface RowProps {
     title: string;
     movies: Movie[];
     isLargeRow?: boolean;
+    progressMap?: Record<string, number>;
 }
 
-export default function Row({ title, movies, isLargeRow }: RowProps) {
+export default function Row({ title, movies, isLargeRow, progressMap }: RowProps) {
     const rowRef = useRef<HTMLDivElement>(null);
 
     if (!movies || movies.length === 0) return null;
@@ -57,8 +58,9 @@ export default function Row({ title, movies, isLargeRow }: RowProps) {
                         const href = (movie.type === "SERIE" || movie.type === "ANIME")
                             ? `/series/${movie.id}`
                             : `/title/${movie.id}`;
+                        const pct = progressMap?.[movie.id];
                         return (
-                            <Link key={movie.id} href={href} className={styles.posterWrapper}>
+                            <Link key={movie.id} href={href} className={styles.posterWrapper} style={{ position: "relative" }}>
                                 <img
                                     src={movie.thumbnailUrl}
                                     alt={movie.title}
@@ -72,6 +74,20 @@ export default function Row({ title, movies, isLargeRow }: RowProps) {
                                         {movie.year && <span className={styles.year}>{movie.year}</span>}
                                     </div>
                                 </div>
+                                {pct !== undefined && pct > 0 && (
+                                    <div style={{
+                                        position: "absolute", bottom: 0, left: 0, right: 0,
+                                        height: "3px", backgroundColor: "rgba(0,0,0,0.5)",
+                                        borderRadius: "0 0 6px 6px",
+                                        overflow: "hidden",
+                                    }}>
+                                        <div style={{
+                                            height: "100%",
+                                            width: `${pct}%`,
+                                            backgroundColor: "#6366f1",
+                                        }} />
+                                    </div>
+                                )}
                             </Link>
                         );
                     })}

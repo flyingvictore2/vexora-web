@@ -51,6 +51,7 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
             title={movie.title}
             defaultUrl={movie.videoUrl}
             servers={movie.servers}
+            movieId={movie.id}
         />
     );
 }
