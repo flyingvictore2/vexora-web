@@ -17,6 +17,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [guestLoading, setGuestLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,6 +40,16 @@ export default function LoginPage() {
     const handleGoogle = async () => {
         setGoogleLoading(true);
         await signIn("google", { callbackUrl: "/profiles" });
+    };
+
+    const handleGuest = async () => {
+        setGuestLoading(true);
+        try {
+            await fetch("/api/auth/guest", { method: "POST" });
+            router.push("/");
+        } finally {
+            setGuestLoading(false);
+        }
     };
 
     const inputBase: React.CSSProperties = {
@@ -267,6 +278,53 @@ export default function LoginPage() {
                 <Link href="/auth/register" style={{ color: "#a5b4fc", fontWeight: 700 }}>
                     Créala gratis
                 </Link>
+            </p>
+
+            {/* Divider */}
+            <div style={{ position: "relative", textAlign: "center", margin: "20px 0 16px" }}>
+                <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: "1px", backgroundColor: "rgba(255,255,255,0.06)" }} />
+                <span style={{ position: "relative", background: "rgba(10,10,20,0.85)", padding: "0 12px", fontSize: "11px", color: "#374151" }}>
+                    o continúa sin cuenta
+                </span>
+            </div>
+
+            {/* Guest button */}
+            <button
+                onClick={handleGuest}
+                disabled={guestLoading}
+                style={{
+                    width: "100%",
+                    padding: "12px",
+                    backgroundColor: "transparent",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "10px",
+                    color: "rgba(255,255,255,0.5)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: guestLoading ? "not-allowed" : "pointer",
+                    fontFamily: "inherit",
+                    transition: "all 0.2s",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    opacity: guestLoading ? 0.6 : 1,
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.75)";
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.5)";
+                }}
+            >
+                <span style={{ fontSize: "16px" }}>🎭</span>
+                {guestLoading ? "Entrando..." : "Entrar como invitado"}
+            </button>
+            <p style={{ textAlign: "center", marginTop: "8px", fontSize: "11px", color: "#374151", lineHeight: 1.4 }}>
+                Puedes navegar, pero no crear listas ni contratar planes.
+                La sesión se cierra al salir del navegador.
             </p>
         </div>
     );

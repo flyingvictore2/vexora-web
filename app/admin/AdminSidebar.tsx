@@ -7,6 +7,7 @@ const navItems = [
     { name: "Resumen", href: "/admin", icon: "📊" },
     { name: "Películas & Series", href: "/admin/movies", icon: "🎬" },
     { name: "Servidores", href: "/admin/servers", icon: "🌐" },
+    { name: "Secciones visibles", href: "/admin/sections", icon: "👁️" },
     { name: "Soporte", href: "/admin/support", icon: "📬" },
     { name: "Solicitudes", href: "/admin/requests", icon: "✍️" },
     { name: "Usuarios", href: "/admin/users", icon: "👤" },

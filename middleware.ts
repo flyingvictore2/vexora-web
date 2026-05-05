@@ -1,43 +1,49 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
+// Paths that guests (non-authenticated with guest cookie) can visit
+const GUEST_ALLOWED = ["/", "/movies", "/series", "/animes", "/title", "/search", "/calendar", "/requests", "/support", "/plans", "/watch"];
+
+function isGuestAllowed(pathname: string): boolean {
+    return GUEST_ALLOWED.some(p => pathname === p || pathname.startsWith(p + "/"));
+}
+
 export default withAuth(
     function middleware(req) {
         const token = req.nextauth.token;
         const isAuth = !!token;
         const pathname = req.nextUrl.pathname;
         const isAuthPage = pathname.startsWith("/auth");
+        const isGuest = req.cookies.get("vexora_guest")?.value === "1";
 
-        // Si está autenticado y va a /auth → redirigir a /profiles
+        // Authenticated users visiting /auth → go to /profiles
         if (isAuthPage) {
-            if (isAuth) {
-                return NextResponse.redirect(new URL("/profiles", req.url));
-            }
-            return null;
+            if (isAuth) return NextResponse.redirect(new URL("/profiles", req.url));
+            return NextResponse.next(); // guests and unauthenticated can visit /auth
         }
 
-        // Si no está autenticado → login
+        // Not authenticated
         if (!isAuth) {
+            // Guest with cookie → allow only content pages
+            if (isGuest && isGuestAllowed(pathname)) {
+                return NextResponse.next();
+            }
+            // Everything else → login
             return NextResponse.redirect(new URL("/auth/login", req.url));
         }
 
-        // Proteger rutas de admin: solo rol ADMIN
-        const isAdminPage = pathname.startsWith("/admin");
-        if (isAdminPage && token?.role !== "ADMIN") {
+        // Admin-only routes
+        if (pathname.startsWith("/admin") && token?.role !== "ADMIN") {
             return NextResponse.redirect(new URL("/", req.url));
         }
 
-        // Pasar pathname al header para usarlo en server components
         const requestHeaders = new Headers(req.headers);
         requestHeaders.set("x-pathname", pathname);
-
-        return NextResponse.next({
-            request: { headers: requestHeaders },
-        });
+        return NextResponse.next({ request: { headers: requestHeaders } });
     },
     {
         callbacks: {
-            authorized: ({ token }) => true, // el middleware maneja la lógica
+            authorized: () => true, // middleware function handles all logic
         },
     }
 );

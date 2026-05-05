@@ -14,6 +14,11 @@ export default function Navbar() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isDark, setIsDark] = useState(true);
     const [siteName, setSiteName] = useState("Vexora");
+    const [isGuest, setIsGuest] = useState(false);
+    const [sections, setSections] = useState({
+        movies: true, series: true, animes: true, list: true,
+        calendar: true, requests: true, support: true, plans: true, search: true,
+    });
     const pathname = usePathname();
     const router = useRouter();
 
@@ -25,9 +30,15 @@ export default function Navbar() {
             document.body.classList.add("light-theme");
         }
 
+        // Check guest cookie
+        setIsGuest(document.cookie.split(";").some(c => c.trim() === "vexora_guest=1"));
+
         fetch("/api/config")
             .then(r => r.json())
-            .then(d => { if (d.siteName) setSiteName(d.siteName); })
+            .then(d => {
+                if (d.siteName) setSiteName(d.siteName);
+                if (d.sections) setSections(s => ({ ...s, ...d.sections }));
+            })
             .catch(() => { });
 
         // Initial notification fetch
@@ -103,6 +114,11 @@ export default function Navbar() {
         await signOut({ callbackUrl: "/auth/login" });
     };
 
+    const handleGuestExit = async () => {
+        await fetch("/api/auth/guest", { method: "DELETE" });
+        router.push("/auth/login");
+    };
+
     return (
         <nav className={`${styles.navbar} ${scrolled ? styles.scrolled : ""}`}>
             <div className={styles.container}>
@@ -115,20 +131,20 @@ export default function Navbar() {
                         {session && (session.user as any).role === 'ADMIN' && (
                             <Link href="/admin" style={{ color: 'var(--primary)', fontWeight: '800' }}>PANEL ADMIN</Link>
                         )}
-                        <Link href="/movies" className={pathname === '/movies' ? styles.active : ''}>PELÍCULAS</Link>
-                        <Link href="/series" className={pathname === '/series' ? styles.active : ''}>SERIES</Link>
-                        <Link href="/animes" className={pathname === '/animes' ? styles.active : ''}>ANIMES</Link>
-                        <Link href="/list" className={pathname === '/list' ? styles.active : ''}>LISTAS</Link>
-                        <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>CALENDARIO</Link>
-                        <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>SOLICITUDES</Link>
-                        <Link href="/support" className={pathname === '/support' ? styles.active : ''}>SOPORTE</Link>
-                        <Link href="/plans" className={pathname === '/plans' ? styles.active : ''}>PLANES</Link>
+                        {sections.movies   && <Link href="/movies"   className={pathname === '/movies'   ? styles.active : ''}>PELÍCULAS</Link>}
+                        {sections.series   && <Link href="/series"   className={pathname === '/series'   ? styles.active : ''}>SERIES</Link>}
+                        {sections.animes   && <Link href="/animes"   className={pathname === '/animes'   ? styles.active : ''}>ANIMES</Link>}
+                        {sections.list     && !isGuest && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>LISTAS</Link>}
+                        {sections.calendar && <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>CALENDARIO</Link>}
+                        {sections.requests && <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>SOLICITUDES</Link>}
+                        {sections.support  && <Link href="/support"  className={pathname === '/support'  ? styles.active : ''}>SOPORTE</Link>}
+                        {sections.plans    && <Link href="/plans"    className={pathname === '/plans'    ? styles.active : ''}>PLANES</Link>}
                     </div>
                 </div>
 
                 <div className={styles.right}>
                     <div className={styles.iconSet}>
-                        <Link href="/search" className={styles.iconBtn}>🔍</Link>
+                        {sections.search && <Link href="/search" className={styles.iconBtn}>🔍</Link>}
                         <button className={styles.iconBtn} onClick={toggleTheme}>
                             {isDark ? "🌙" : "☀️"}
                         </button>
@@ -211,7 +227,32 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {session ? (
+                    {isGuest ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{
+                                fontSize: "12px", fontWeight: "700", color: "rgba(255,255,255,0.45)",
+                                padding: "4px 10px", borderRadius: "6px",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                backgroundColor: "rgba(255,255,255,0.04)",
+                            }}>🎭 Invitado</span>
+                            <Link href="/auth/login" style={{
+                                padding: "6px 14px", borderRadius: "7px", fontSize: "12px", fontWeight: "700",
+                                backgroundColor: "var(--primary)", color: "white", textDecoration: "none",
+                            }}>
+                                Iniciar sesión
+                            </Link>
+                            <button
+                                onClick={handleGuestExit}
+                                style={{
+                                    fontSize: "11px", color: "rgba(255,255,255,0.35)", background: "none",
+                                    border: "none", cursor: "pointer", fontWeight: "600",
+                                }}
+                                title="Salir de la sesión de invitado"
+                            >
+                                Salir
+                            </button>
+                        </div>
+                    ) : session ? (
                         <div style={{ position: 'relative' }}>
                             <div
                                 className={styles.profile}
@@ -325,6 +366,7 @@ export default function Navbar() {
                             INICIAR SESIÓN
                         </Link>
                     )}
+
                 </div>
             </div>
         </nav>
