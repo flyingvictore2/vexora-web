@@ -116,6 +116,8 @@ model profile {
   image        String?
   isKid        Boolean        @default(false)
   pin          String?
+  avatarColor  String?
+  avatarEmoji  String?
   userId       String
   createdAt    DateTime       @default(now())
   updatedAt    DateTime
