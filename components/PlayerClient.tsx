@@ -25,6 +25,7 @@ interface PlayerClientProps {
     servers: VideoServer[];
     // Movie only
     movieId?: string;
+    description?: string;
     // Episode fields
     seriesTitle?: string;
     episodeNumber?: number;
@@ -50,6 +51,7 @@ export default function PlayerClient({
     defaultUrl,
     servers,
     movieId,
+    description,
     seriesTitle,
     episodeNumber,
     seasonNumber,
@@ -220,19 +222,23 @@ export default function PlayerClient({
                 )}
 
                 {/* SINOPSIS */}
-                {(episodeDescription || !isEpisode) && (
-                    <div style={{ marginBottom: "20px" }}>
-                        <h3 style={{
-                            fontSize: "0.75rem", fontWeight: "800", color: "rgba(255,255,255,0.9)",
-                            letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px",
-                        }}>
-                            Sinopsis
-                        </h3>
-                        <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", lineHeight: "1.6" }}>
-                            {episodeDescription || "No hay descripción disponible."}
-                        </p>
-                    </div>
-                )}
+                {(() => {
+                    const text = isEpisode ? episodeDescription : description;
+                    if (!text) return null;
+                    return (
+                        <div style={{ marginTop: "24px", marginBottom: "20px", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                            <h3 style={{
+                                fontSize: "0.75rem", fontWeight: "800", color: "rgba(255,255,255,0.9)",
+                                letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "10px",
+                            }}>
+                                Sinopsis
+                            </h3>
+                            <p style={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.5)", lineHeight: "1.6" }}>
+                                {text}
+                            </p>
+                        </div>
+                    );
+                })()}
 
                 {/* REPRODUCTOR */}
                 <div style={{ backgroundColor: "black", borderRadius: "10px", overflow: "hidden", lineHeight: 0 }}>
