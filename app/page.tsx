@@ -116,13 +116,19 @@ export default function Home() {
             )}
 
             {/* Secciones principales */}
-            <div style={{ marginTop: heroMovie ? '-4rem' : '0', position: 'relative', zIndex: 2 }}>
+            {/* Si hay historial quitamos el margen negativo para que el título "Seguir viendo" sea visible */}
+            <div style={{
+                marginTop: heroMovie && continueWatching.length === 0 && watchAgain.length === 0 ? '-4rem' : '1.5rem',
+                position: 'relative',
+                zIndex: 2,
+            }}>
                 {continueWatching.length > 0 && (
-                    <Row title="Seguir viendo" movies={continueWatching} progressMap={progressMap} />
+                    <Row title="▶ Seguir viendo" movies={continueWatching} progressMap={progressMap} />
                 )}
                 {watchAgain.length > 0 && (
-                    <Row title="Volver a ver" movies={watchAgain} progressMap={progressMap} />
+                    <Row title="↩ Volver a ver" movies={watchAgain} progressMap={progressMap} />
                 )}
+
                 <Row title="Novedades" movies={novedades} isLargeRow />
                 <Row title="Películas" movies={peliculas} />
                 <Row title="Series" movies={series} />
