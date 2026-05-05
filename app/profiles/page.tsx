@@ -94,7 +94,11 @@ export default function ProfilesPage() {
                     avatarEmoji: selectedEmoji,
                 }),
             });
-            if (!res.ok) { setCreateError("Error al crear el perfil"); return; }
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                setCreateError(errData.error || "Error al crear el perfil");
+                return;
+            }
             setIsCreating(false);
             resetCreate();
             fetchProfiles();
