@@ -3,13 +3,12 @@ import React from "react";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
         <div style={{
-            marginTop: "-70px",
-            minHeight: "100vh",
-            width: "100%",
-            position: "relative",
+            position: "fixed",
+            inset: 0,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            overflowY: "auto",
             padding: "40px 20px",
             background: `
                 radial-gradient(ellipse at 15% 40%, rgba(99,102,241,0.18) 0%, transparent 55%),
@@ -17,6 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                 radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 60%),
                 #08090d
             `,
+            zIndex: 50,
             boxSizing: "border-box",
         }}>
             {/* Partículas de fondo - líneas diagonales sutiles */}
