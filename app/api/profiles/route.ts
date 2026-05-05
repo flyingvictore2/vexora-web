@@ -24,18 +24,33 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({ where: { email: session.user.email } });
     if (!user) return new NextResponse("User not found", { status: 404 });
 
-    const profile = await prisma.profile.create({
-        data: {
-            id: crypto.randomUUID(),
-            name,
-            pin: pin || null,
-            isKid: isKid || false,
-            avatarColor: avatarColor || "#6366f1",
-            avatarEmoji: avatarEmoji || "😎",
-            userId: user.id,
-            updatedAt: new Date(),
-        }
-    });
+    try {
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
 
-    return NextResponse.json(profile);
+        // Use raw SQL so new columns work even if Prisma client cache is stale
+        await prisma.$executeRawUnsafe(
+            `INSERT INTO "profile" (id, name, pin, "isKid", "avatarColor", "avatarEmoji", "userId", "createdAt", "updatedAt")
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             ON CONFLICT (id) DO NOTHING`,
+            id,
+            name,
+            pin || null,
+            isKid || false,
+            avatarColor || "#6366f1",
+            avatarEmoji || "😎",
+            user.id,
+            now,
+            now
+        );
+
+        const profile = await prisma.$queryRawUnsafe(
+            `SELECT * FROM "profile" WHERE id = $1`, id
+        );
+
+        return NextResponse.json(Array.isArray(profile) ? profile[0] : profile);
+    } catch (err: any) {
+        console.error("Profile create error:", err);
+        return NextResponse.json({ error: err.message || "Error al crear el perfil" }, { status: 500 });
+    }
 }
