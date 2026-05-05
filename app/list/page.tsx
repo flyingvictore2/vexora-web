@@ -181,11 +181,30 @@ export default function MyListsPage() {
     const [userLists, setUserLists] = useState<UserList[]>([]);
     const [myList, setMyList] = useState<MovieItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [profileId, setProfileId] = useState<string | null>(null);
     const [newListName, setNewListName] = useState("");
     const [creating, setCreating] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+
+    const fetchLists = async (pid: string, silent = false) => {
+        if (!silent) setRefreshing(true);
+        try {
+            const res = await fetch(`/api/lists?profileId=${pid}`);
+            const data = await res.json();
+            if (data?.error) {
+                setLoadError(data.error);
+            } else {
+                setUserLists(Array.isArray(data) ? data : []);
+                setLoadError(null);
+            }
+        } catch {
+            setLoadError("Error de red al cargar listas");
+        } finally {
+            if (!silent) setRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         const pid = localStorage.getItem("selectedProfileId");
@@ -193,20 +212,14 @@ export default function MyListsPage() {
         if (!pid) { setLoading(false); return; }
 
         Promise.all([
-            fetch(`/api/lists?profileId=${pid}`)
-                .then(r => r.json())
-                .catch(() => ({ error: "Error de red" })),
+            fetchLists(pid, true),
             fetch(`/api/mylist?profileId=${pid}`)
                 .then(r => r.json())
                 .catch(() => []),
-        ]).then(([lists, mylist]) => {
-            if (lists?.error) {
-                setLoadError(lists.error);
-            } else {
-                setUserLists(Array.isArray(lists) ? lists : []);
-            }
+        ]).then(([, mylist]) => {
             setMyList(Array.isArray(mylist) ? mylist : []);
         }).finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const createList = async () => {
@@ -235,9 +248,9 @@ export default function MyListsPage() {
                 return;
             }
 
-            // data is the new list (id, name, profileId, createdAt)
-            setUserLists(prev => [...prev, { ...data, items: [] }]);
             setNewListName("");
+            // Recargar listas del servidor para obtener el estado actualizado
+            await fetchLists(profileId);
         } catch (err) {
             setCreateError("Error de red. Comprueba tu conexión e inténtalo de nuevo.");
             console.error("createList error:", err);
@@ -320,9 +333,24 @@ export default function MyListsPage() {
                     </p>
                 )}
                 {loadError && (
-                    <p style={{ color: "#f87171", fontSize: "0.85rem", marginTop: "12px" }}>
-                        ⚠️ Error al cargar listas: {loadError}
-                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "12px" }}>
+                        <p style={{ color: "#f87171", fontSize: "0.85rem", margin: 0 }}>
+                            ⚠️ Error al cargar listas: {loadError}
+                        </p>
+                        {profileId && (
+                            <button
+                                onClick={() => fetchLists(profileId)}
+                                disabled={refreshing}
+                                style={{
+                                    padding: "5px 12px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: "700",
+                                    backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+                                    color: "white", cursor: "pointer", opacity: refreshing ? 0.5 : 1,
+                                }}
+                            >
+                                {refreshing ? "Cargando..." : "↺ Reintentar"}
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
 
