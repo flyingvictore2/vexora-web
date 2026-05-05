@@ -26,6 +26,7 @@ interface PlayerClientProps {
     // Movie only
     movieId?: string;
     description?: string;
+    defaultServerId?: string;
     // Episode fields
     seriesTitle?: string;
     episodeNumber?: number;
@@ -52,6 +53,7 @@ export default function PlayerClient({
     servers,
     movieId,
     description,
+    defaultServerId,
     seriesTitle,
     episodeNumber,
     seasonNumber,
@@ -65,7 +67,10 @@ export default function PlayerClient({
 
     const legacyServer: VideoServer = { id: "default-0", name: "Servidor Principal", url: defaultUrl, quality: "Auto" };
     const allServers = servers.length > 0 ? servers : [legacyServer];
-    const [activeServer, setActiveServer] = useState<VideoServer>(allServers[0]);
+    const initialServer = defaultServerId
+        ? (allServers.find(s => s.id === defaultServerId) ?? allServers[0])
+        : allServers[0];
+    const [activeServer, setActiveServer] = useState<VideoServer>(initialServer);
 
     const backHref = isEpisode && movieId ? `/title/${movieId}` : "/";
 
@@ -249,8 +254,8 @@ export default function PlayerClient({
                     />
                 </div>
 
-                {/* Selector de servidores (solo si hay más de uno) */}
-                {allServers.length > 1 && (
+                {/* Selector de servidores: solo si hay más de uno Y no se pre-seleccionó desde la ficha */}
+                {allServers.length > 1 && !defaultServerId && (
                     <div style={{ marginTop: "16px" }}>
                         <p style={{
                             fontSize: "0.7rem", fontWeight: "700", color: "rgba(255,255,255,0.35)",

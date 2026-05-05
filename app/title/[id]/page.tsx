@@ -11,6 +11,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
             episodes: {
                 orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }],
             },
+            servers: true,
         },
     });
 
@@ -112,6 +113,41 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                                     Próximamente
                                 </span>
                             )
+                        ) : movie.servers.length > 0 ? (
+                            // Multiple servers: show a button per server
+                            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "rgba(255,255,255,0.35)", letterSpacing: "1px", textTransform: "uppercase" }}>
+                                    Servidores disponibles
+                                </span>
+                                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                                    {movie.servers.map((srv) => (
+                                        <Link
+                                            key={srv.id}
+                                            href={`/watch/${movie.id}?s=${srv.id}`}
+                                            style={{
+                                                display: "inline-flex", alignItems: "center", gap: "8px",
+                                                padding: "0.75rem 1.6rem",
+                                                backgroundColor: "rgba(229,9,20,0.9)",
+                                                color: "white", textDecoration: "none",
+                                                borderRadius: "8px", fontWeight: "800",
+                                                fontSize: "0.88rem", letterSpacing: "0.5px",
+                                                transition: "background 0.2s, transform 0.1s",
+                                                border: "1px solid rgba(255,255,255,0.1)",
+                                            }}
+                                            onMouseOver={(e: any) => e.currentTarget.style.backgroundColor = "rgba(229,9,20,1)"}
+                                            onMouseOut={(e: any) => e.currentTarget.style.backgroundColor = "rgba(229,9,20,0.9)"}
+                                        >
+                                            ▶ {srv.name}
+                                            <span style={{
+                                                fontSize: "0.65rem", fontWeight: "700",
+                                                padding: "2px 7px", borderRadius: "4px",
+                                                backgroundColor: "rgba(0,0,0,0.35)",
+                                                letterSpacing: "0.3px",
+                                            }}>{srv.quality}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
                         ) : (
                             <Link
                                 href={`/watch/${movie.id}`}

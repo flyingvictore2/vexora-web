@@ -5,8 +5,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
-export default async function WatchPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function WatchPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ s?: string }>;
+}) {
     const { id } = await params;
+    const { s: defaultServerId } = await searchParams;
     const session = await getServerSession(authOptions);
 
     if (!session) {
@@ -53,6 +60,7 @@ export default async function WatchPage({ params }: { params: Promise<{ id: stri
             servers={movie.servers}
             movieId={movie.id}
             description={movie.description}
+            defaultServerId={defaultServerId}
         />
     );
 }
