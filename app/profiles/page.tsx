@@ -80,15 +80,21 @@ export default function ProfilesPage() {
     const fetchProfiles = async () => {
         try {
             const res = await fetch("/api/profiles");
-            setProfiles(Array.isArray(await res.json()) ? await fetch("/api/profiles").then(r => r.json()) : []);
-        } catch {}
-        finally { setLoading(false); }
+            const data = await res.json();
+            setProfiles(Array.isArray(data) ? data : []);
+        } catch {
+            setProfiles([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const refetch = async () => {
-        const res = await fetch("/api/profiles");
-        const data = await res.json();
-        setProfiles(Array.isArray(data) ? data : []);
+        try {
+            const res = await fetch("/api/profiles");
+            const data = await res.json();
+            setProfiles(Array.isArray(data) ? data : []);
+        } catch {}
     };
 
     const openCreate = () => {
@@ -124,11 +130,21 @@ export default function ProfilesPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!confirm("¿Seguro que quieres eliminar este perfil? Esta acción no se puede deshacer.")) return;
         setDeletingId(id);
         try {
-            await fetch(`/api/profiles/${id}`, { method: "DELETE" });
+            const res = await fetch(`/api/profiles/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                alert(d.error || "Error al eliminar el perfil");
+                return;
+            }
             await refetch();
-        } finally { setDeletingId(null); }
+        } catch {
+            alert("Error de red al eliminar el perfil");
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     const handleSelectProfile = (profile: any) => {
