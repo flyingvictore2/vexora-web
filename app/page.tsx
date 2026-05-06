@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Row from "@/components/Row";
 import Hero from "@/components/Hero";
 import axios from "axios";
+import { useT } from "@/components/LangProvider";
 
 interface WatchHistoryItem {
     id: string;
@@ -26,6 +27,7 @@ interface WatchHistoryItem {
 export default function Home() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const { t } = useT();
     const [movies, setMovies] = useState<any[]>([]);
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
@@ -111,7 +113,7 @@ export default function Home() {
     watchHistory.forEach(h => { progressMap[h.id || h.movieId] = h.progress; });
 
     return (
-        <div style={{ paddingBottom: "3rem" }}>
+        <div style={{ paddingBottom: "4rem" }}>
             {/* Hero banner */}
             {heroMovie && <Hero movie={heroMovie} />}
 
@@ -121,22 +123,19 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Secciones principales */}
-            {/* Si hay historial quitamos el margen negativo para que el título "Seguir viendo" sea visible */}
-            <div style={{
-                marginTop: heroMovie && continueWatching.length === 0 && watchAgain.length === 0 ? '-4rem' : '1.5rem',
-                position: 'relative',
-                zIndex: 2,
-            }}>
+            {/* Rows — always below hero, never overlapping titles */}
+            <div style={{ position: 'relative', zIndex: 2, paddingTop: heroMovie ? '1.5rem' : '0' }}>
+
+                {/* Tu próximo episodio */}
                 {nextEpisodes.length > 0 && (
                     <div style={{ padding: "0 4%", marginBottom: "2.5rem" }}>
                         <h2 style={{ fontSize: "1.3rem", fontWeight: "700", marginBottom: "0.75rem", color: "var(--foreground)" }}>
-                            ▶ Tu próximo episodio
+                            {t("home.nextep")}
                         </h2>
                         <div style={{ display: "flex", gap: "10px", overflowX: "auto", scrollbarWidth: "none", paddingBottom: "8px" }}>
                             {nextEpisodes.map((ne: any) => (
                                 <a key={ne.episode.id} href={`/watch/episode/${ne.episode.id}`} style={{
-                                    flex: "0 0 auto", width: "320px",
+                                    flex: "0 0 auto", width: "300px",
                                     background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
                                     borderRadius: "10px", overflow: "hidden", textDecoration: "none", color: "white",
                                     transition: "transform 0.2s",
@@ -154,10 +153,10 @@ export default function Home() {
                                         </div>
                                     </div>
                                     <div style={{ padding: "10px 14px" }}>
-                                        <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", marginBottom: "3px", textTransform: "uppercase", letterSpacing: "0.6px", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)", marginBottom: "3px", textTransform: "uppercase", letterSpacing: "0.6px", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                             {ne.seriesTitle}
                                         </div>
-                                        <div style={{ fontSize: "0.9rem", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                        <div style={{ fontSize: "0.88rem", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                                             {ne.episode.title}
                                         </div>
                                     </div>
@@ -168,18 +167,18 @@ export default function Home() {
                 )}
 
                 {continueWatching.length > 0 && (
-                    <Row title="▶ Seguir viendo" movies={continueWatching} progressMap={progressMap} />
+                    <Row title={t("home.continue")} movies={continueWatching} progressMap={progressMap} />
                 )}
                 {watchAgain.length > 0 && (
-                    <Row title="↩ Volver a ver" movies={watchAgain} progressMap={progressMap} />
+                    <Row title={t("home.watchagain")} movies={watchAgain} progressMap={progressMap} />
                 )}
 
-                <Row title="Novedades" movies={novedades} isLargeRow />
-                <Row title="Películas" movies={peliculas} />
-                <Row title="Series" movies={series} />
-                <Row title="Anime" movies={anime} />
+                <Row title={t("home.news")} movies={novedades} isLargeRow />
+                {peliculas.length > 0 && <Row title={t("home.movies")} movies={peliculas} />}
+                {series.length > 0 && <Row title={t("home.series")} movies={series} />}
+                {anime.length > 0 && <Row title={t("home.anime")} movies={anime} />}
                 {recommendations.length > 0 && (
-                    <Row title="Recomendados para ti" movies={recomendados} />
+                    <Row title={t("home.recommended")} movies={recomendados} />
                 )}
             </div>
         </div>
