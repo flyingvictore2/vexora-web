@@ -61,12 +61,36 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                             : `/title/${movie.id}`;
                         const pct = progressMap?.[movie.id];
                         return (
-                            <Link key={movie.id} href={href} className={`${styles.posterWrapper} trailer-host`} style={{ position: "relative" }}>
-                                <img
-                                    src={movie.thumbnailUrl}
-                                    alt={movie.title}
-                                    className={styles.poster}
-                                />
+                            <div key={movie.id} className={`${styles.posterWrapper} trailer-host`} style={{ position: "relative" }}>
+                                <Link href={href} style={{ display: "block", position: "relative" }}>
+                                    <img
+                                        src={movie.thumbnailUrl}
+                                        alt={movie.title}
+                                        className={styles.poster}
+                                    />
+                                    <div className={styles.overlay}>
+                                        <div className={styles.playBtn}>▶</div>
+                                        <p className={styles.overlayTitle}>{movie.title}</p>
+                                        <div className={styles.overlayMeta}>
+                                            {movie.rating && <span className={styles.rating}>★ {movie.rating}</span>}
+                                            {movie.year && <span className={styles.year}>{movie.year}</span>}
+                                        </div>
+                                    </div>
+                                    {pct !== undefined && pct > 0 && (
+                                        <div style={{
+                                            position: "absolute", bottom: 0, left: 0, right: 0,
+                                            height: "3px", backgroundColor: "rgba(0,0,0,0.5)",
+                                            borderRadius: "0 0 6px 6px",
+                                            overflow: "hidden",
+                                        }}>
+                                            <div style={{
+                                                height: "100%",
+                                                width: `${pct}%`,
+                                                backgroundColor: "#6366f1",
+                                            }} />
+                                        </div>
+                                    )}
+                                </Link>
                                 {movie.trailerUrl && (
                                     <iframe
                                         className="trailer-iframe"
@@ -77,33 +101,12 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                                             border: "none", opacity: 0,
                                             pointerEvents: "none",
                                             transition: "opacity 0.3s",
+                                            zIndex: 5,
                                         }}
                                         loading="lazy"
                                     />
                                 )}
-                                <div className={styles.overlay}>
-                                    <div className={styles.playBtn}>▶</div>
-                                    <p className={styles.overlayTitle}>{movie.title}</p>
-                                    <div className={styles.overlayMeta}>
-                                        {movie.rating && <span className={styles.rating}>★ {movie.rating}</span>}
-                                        {movie.year && <span className={styles.year}>{movie.year}</span>}
-                                    </div>
-                                </div>
-                                {pct !== undefined && pct > 0 && (
-                                    <div style={{
-                                        position: "absolute", bottom: 0, left: 0, right: 0,
-                                        height: "3px", backgroundColor: "rgba(0,0,0,0.5)",
-                                        borderRadius: "0 0 6px 6px",
-                                        overflow: "hidden",
-                                    }}>
-                                        <div style={{
-                                            height: "100%",
-                                            width: `${pct}%`,
-                                            backgroundColor: "#6366f1",
-                                        }} />
-                                    </div>
-                                )}
-                            </Link>
+                            </div>
                         );
                     })}
                 </div>
