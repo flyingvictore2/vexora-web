@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import AddToListButton from "@/components/AddToListButton";
 import TitleTabs from "./TitleTabs";
+import BackButton from "@/components/BackButton";
+import RatingStars from "@/components/RatingStars";
 
 export default async function TitlePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -61,6 +63,9 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
 
     return (
         <div style={{ paddingBottom: "4rem", color: "white" }}>
+            {/* ← Volver */}
+            <BackButton />
+
             <div style={{
                 display: "grid",
                 gridTemplateColumns: "200px 1fr 260px",
@@ -160,6 +165,11 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                             </p>
                         </div>
                     )}
+
+                    {/* Valoración */}
+                    <div style={{ margin: "1.25rem 0 0.5rem" }}>
+                        <RatingStars movieId={movie.id} size="lg" />
+                    </div>
 
                     {/* Tabs: ENLACES / EPISODIOS */}
                     <TitleTabs

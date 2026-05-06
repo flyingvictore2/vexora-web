@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import RatingStars from "@/components/RatingStars";
 
 interface Server { id: string; name: string; quality: string; href: string; }
 interface Episode {
@@ -156,6 +157,10 @@ export default function TitleTabs({ servers, isSeriesOrAnime, episodes }: Props)
                                             </div>
                                             <div style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" } as any}>
                                                 {ep.description || "Sin descripción"}
+                                            </div>
+                                            {/* Per-episode rating */}
+                                            <div onClick={e => e.preventDefault()} style={{ marginTop: "6px" }}>
+                                                <RatingStars episodeId={ep.id} size="sm" />
                                             </div>
                                         </div>
                                         <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "1rem", flexShrink: 0 }}>›</span>
