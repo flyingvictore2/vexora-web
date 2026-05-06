@@ -2,6 +2,7 @@ import React from "react";
 import prisma from "@/lib/prisma";
 import FilterBar from "@/components/FilterBar";
 import MovieGrid from "@/components/MovieGrid";
+import { ensureMigrations } from "@/lib/migrate";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ interface PageProps {
 }
 
 export default async function MoviesPage({ searchParams }: PageProps) {
+    await ensureMigrations();
     const params = await searchParams;
     const genre = params.genre || "";
     const year = params.year || "";

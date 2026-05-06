@@ -11,6 +11,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
 import MaintenancePage from "./maintenance/page";
+import { ensureMigrations } from "@/lib/migrate";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,6 +25,7 @@ export default async function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    await ensureMigrations();
     const session = await getServerSession(authOptions);
     const [maintenanceModeSetting, maintenanceTimeSetting] = await Promise.all([
         prisma.setting.findUnique({ where: { key: "maintenanceMode" } }),
