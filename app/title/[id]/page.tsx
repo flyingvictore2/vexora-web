@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import AddToListButton from "@/components/AddToListButton";
+import TitleTabs from "./TitleTabs";
 
 export default async function TitlePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -8,9 +9,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
     const movie = await prisma.movie.findUnique({
         where: { id },
         include: {
-            episodes: {
-                orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }],
-            },
+            episodes: { orderBy: [{ seasonNumber: "asc" }, { episodeNumber: "asc" }] },
             servers: true,
         },
     });
@@ -23,297 +22,201 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
         );
     }
 
-    const isSeriesOrAnime = movie.type === "SERIES" || movie.type === "ANIME";
+    // Similar movies (same genre, different id)
+    const similarMovies = await prisma.movie.findMany({
+        where: { genre: movie.genre, id: { not: id } },
+        take: 8,
+        select: { id: true, title: true, thumbnailUrl: true, rating: true, type: true },
+    });
 
-    // Agrupar episodios por temporada
-    const seasons: Record<number, typeof movie.episodes> = {};
-    if (isSeriesOrAnime) {
-        for (const ep of movie.episodes) {
-            if (!seasons[ep.seasonNumber]) seasons[ep.seasonNumber] = [];
-            seasons[ep.seasonNumber].push(ep);
-        }
-    }
+    const isSeriesOrAnime = movie.type === "SERIE" || movie.type === "ANIME";
 
-    const seasonNumbers = Object.keys(seasons).map(Number).sort((a, b) => a - b);
+    // Build server list — fall back to videoUrl if no dedicated servers
+    const displayServers = movie.servers.length > 0
+        ? movie.servers.map(s => ({ id: s.id, name: s.name, quality: s.quality, href: `/watch/${movie.id}?s=${s.id}` }))
+        : movie.videoUrl
+            ? [{ id: "default", name: "Servidor 1", quality: "Auto", href: `/watch/${movie.id}` }]
+            : [];
 
-    // Primer episodio para el botón de "Ver"
-    const firstEpisode = movie.episodes[0] ?? null;
+    const primaryHref = isSeriesOrAnime
+        ? (movie.episodes[0] ? `/watch/episode/${movie.episodes[0].id}` : null)
+        : (displayServers[0]?.href ?? null);
+
+    // Type badge colours
+    const typeInfo = movie.type === "ANIME"
+        ? { label: "Anime",    color: "#a78bfa", bg: "rgba(139,92,246,0.15)", border: "rgba(139,92,246,0.3)" }
+        : movie.type === "SERIE"
+            ? { label: "Serie",    color: "#60a5fa", bg: "rgba(37,99,235,0.15)",  border: "rgba(37,99,235,0.3)" }
+            : { label: "Película", color: "#f87171", bg: "rgba(229,9,20,0.15)",   border: "rgba(229,9,20,0.3)" };
+
+    // Episodes serialised (avoid Prisma Date objects in client props)
+    const episodes = movie.episodes.map(e => ({
+        id: e.id,
+        title: e.title,
+        episodeNumber: e.episodeNumber,
+        seasonNumber: e.seasonNumber,
+        thumbnailUrl: e.thumbnailUrl,
+        description: e.description,
+    }));
 
     return (
-        <div style={{ paddingBottom: "4rem" }}>
-
-            {/* Header: poster + info */}
+        <div style={{ paddingBottom: "4rem", color: "white" }}>
             <div style={{
-                display: "flex",
-                gap: "3rem",
-                backgroundColor: "rgba(11, 12, 16, 0.8)",
-                borderRadius: "16px",
-                overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.05)",
-                marginBottom: "3rem",
+                display: "grid",
+                gridTemplateColumns: "200px 1fr 260px",
+                gap: "2rem",
+                alignItems: "start",
             }}>
-                <div style={{ width: "280px", minWidth: "280px", flexShrink: 0 }}>
-                    <img
-                        src={movie.thumbnailUrl}
-                        alt={movie.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    />
-                </div>
 
-                <div style={{ padding: "2.5rem 2.5rem 2.5rem 0", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    {/* Tipo badge */}
-                    <span style={{
-                        display: "inline-block", marginBottom: "0.75rem",
-                        padding: "4px 12px", borderRadius: "6px", fontSize: "0.7rem",
-                        fontWeight: "800", letterSpacing: "1px", textTransform: "uppercase",
-                        backgroundColor: movie.type === "ANIME" ? "rgba(139,92,246,0.2)" :
-                            movie.type === "SERIES" ? "rgba(37,99,235,0.2)" : "rgba(229,9,20,0.2)",
-                        color: movie.type === "ANIME" ? "#a78bfa" :
-                            movie.type === "SERIES" ? "#60a5fa" : "#f87171",
-                        border: `1px solid ${movie.type === "ANIME" ? "rgba(139,92,246,0.3)" :
-                            movie.type === "SERIES" ? "rgba(37,99,235,0.3)" : "rgba(229,9,20,0.3)"}`,
-                        width: "fit-content",
-                    }}>
-                        {movie.type === "ANIME" ? "Anime" : movie.type === "SERIES" ? "Serie" : "Película"}
-                    </span>
-
-                    <h1 style={{ fontSize: "2.6rem", fontWeight: "900", marginBottom: "1rem", color: "white", lineHeight: 1.15 }}>
-                        {movie.title}
-                    </h1>
-
-                    <div style={{ display: "flex", gap: "1.2rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-                        <span style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.9rem" }}>{movie.year}</span>
-                        <span style={{ color: "#eab308", fontWeight: "700", fontSize: "0.9rem" }}>★ {movie.rating}</span>
-                        <span style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.9rem" }}>{movie.duration}</span>
-                        <span style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.9rem" }}>{movie.genre}</span>
+                {/* ── LEFT: poster + meta ───────────────────────── */}
+                <aside>
+                    <div style={{ borderRadius: "12px", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.7)" }}>
+                        <img
+                            src={movie.thumbnailUrl}
+                            alt={movie.title}
+                            style={{ width: "100%", display: "block" }}
+                        />
+                    </div>
+                    <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "7px" }}>
+                        {movie.year && (
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "#94a3b8" }}>
+                                <span>📅</span> {movie.year}
+                            </div>
+                        )}
+                        {movie.duration && (
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "#94a3b8" }}>
+                                <span>⏱</span> {movie.duration}
+                            </div>
+                        )}
+                        {movie.rating && (
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "#eab308", fontWeight: "700" }}>
+                                <span>★</span> {movie.rating}
+                            </div>
+                        )}
+                        {movie.genre && (
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "#94a3b8" }}>
+                                <span>🎬</span> {movie.genre}
+                            </div>
+                        )}
                         {isSeriesOrAnime && movie.episodes.length > 0 && (
-                            <span style={{ color: "#94a3b8", fontWeight: "600", fontSize: "0.9rem" }}>
-                                {movie.episodes.length} episodio{movie.episodes.length !== 1 ? "s" : ""}
-                                {seasonNumbers.length > 1 ? ` · ${seasonNumbers.length} temporadas` : ""}
-                            </span>
+                            <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "#94a3b8" }}>
+                                <span>📺</span> {movie.episodes.length} ep.
+                            </div>
+                        )}
+                    </div>
+                </aside>
+
+                {/* ── MAIN: title + tabs ─────────────────────────── */}
+                <main>
+                    {/* Badges */}
+                    <div style={{ display: "flex", gap: "8px", marginBottom: "0.85rem", flexWrap: "wrap" }}>
+                        <span style={{
+                            padding: "3px 12px", borderRadius: "4px", fontSize: "0.7rem",
+                            fontWeight: "800", letterSpacing: "0.8px", textTransform: "uppercase",
+                            backgroundColor: typeInfo.bg, color: typeInfo.color, border: `1px solid ${typeInfo.border}`,
+                        }}>{typeInfo.label}</span>
+                        {movie.genre && (
+                            <span style={{
+                                padding: "3px 12px", borderRadius: "4px", fontSize: "0.7rem",
+                                fontWeight: "800", letterSpacing: "0.8px", textTransform: "uppercase",
+                                backgroundColor: "rgba(255,255,255,0.06)", color: "#94a3b8", border: "1px solid rgba(255,255,255,0.1)",
+                            }}>{movie.genre}</span>
+                        )}
+                        {movie.requiredPlan && movie.requiredPlan !== "FREE" && (
+                            <span style={{
+                                padding: "3px 12px", borderRadius: "4px", fontSize: "0.7rem",
+                                fontWeight: "800", letterSpacing: "0.8px", textTransform: "uppercase",
+                                backgroundColor: "rgba(234,179,8,0.15)", color: "#fbbf24", border: "1px solid rgba(234,179,8,0.3)",
+                            }}>{movie.requiredPlan}</span>
                         )}
                     </div>
 
-                    <p style={{ fontSize: "1rem", lineHeight: "1.75", color: "#cbd5e1", marginBottom: "2rem", maxWidth: "600px" }}>
-                        {movie.description || "No hay descripción disponible."}
-                    </p>
+                    {/* Title */}
+                    <h1 style={{
+                        fontSize: "2.6rem", fontWeight: "900", lineHeight: 1.1,
+                        marginBottom: "1.25rem", letterSpacing: "-0.5px",
+                    }}>
+                        {movie.title}
+                    </h1>
 
-                    <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                        {isSeriesOrAnime ? (
-                            firstEpisode ? (
-                                <Link
-                                    href={`/watch/episode/${firstEpisode.id}`}
-                                    className="btn btn-primary"
-                                    style={{ padding: "0.9rem 2.5rem", fontSize: "1rem" }}
-                                >
-                                    ▶ Ver desde el inicio
-                                </Link>
-                            ) : (
-                                <span style={{ color: "#64748b", fontSize: "0.9rem", padding: "0.9rem 0" }}>
-                                    Próximamente
-                                </span>
-                            )
-                        ) : (() => {
-                            // Build the list of servers to display.
-                            // If dedicated servers exist use them; otherwise fall back to the movie's videoUrl.
-                            const displayServers = movie.servers.length > 0
-                                ? movie.servers.map(s => ({
-                                    id: s.id,
-                                    name: s.name,
-                                    quality: s.quality,
-                                    href: `/watch/${movie.id}?s=${s.id}`,
-                                }))
-                                : movie.videoUrl
-                                    ? [{ id: "default", name: "Servidor 1", quality: "Auto", href: `/watch/${movie.id}` }]
-                                    : [];
-
-                            if (displayServers.length === 0) {
-                                return (
-                                    <span style={{ color: "#64748b", fontSize: "0.9rem", padding: "0.9rem 0" }}>
-                                        Próximamente
-                                    </span>
-                                );
-                            }
-
-                            return (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                    <span style={{ fontSize: "0.72rem", fontWeight: "800", color: "rgba(255,255,255,0.35)", letterSpacing: "1px", textTransform: "uppercase" }}>
-                                        Servidores disponibles
-                                    </span>
-                                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                                        {displayServers.map((srv) => (
-                                            <Link key={srv.id} href={srv.href} className="server-btn">
-                                                ▶ {srv.name}
-                                                <span className="server-btn-quality">{srv.quality}</span>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })()}
+                    {/* Action row */}
+                    <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+                        {primaryHref && (
+                            <Link href={primaryHref} className="btn btn-primary" style={{ padding: "0.75rem 2rem", fontSize: "0.95rem", fontWeight: "800" }}>
+                                ▶ VER AHORA
+                            </Link>
+                        )}
                         <AddToListButton movieId={movie.id} />
                     </div>
-                </div>
-            </div>
 
-            {/* Lista de episodios */}
-            {isSeriesOrAnime && movie.episodes.length > 0 && (
-                <div>
-                    <h2 style={{ fontSize: "1.4rem", fontWeight: "800", color: "white", marginBottom: "1.5rem", letterSpacing: "-0.5px" }}>
-                        Episodios
-                    </h2>
+                    {/* Sinopsis */}
+                    {movie.description && (
+                        <div style={{ marginBottom: "0.5rem" }}>
+                            <h3 style={{ fontSize: "0.72rem", fontWeight: "800", color: "rgba(255,255,255,0.45)", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: "8px" }}>
+                                SINOPSIS
+                            </h3>
+                            <p style={{ fontSize: "0.95rem", color: "#cbd5e1", lineHeight: "1.75", maxWidth: "680px" }}>
+                                {movie.description}
+                            </p>
+                        </div>
+                    )}
 
-                    {seasonNumbers.map((seasonNum) => (
-                        <div key={seasonNum} style={{ marginBottom: "2.5rem" }}>
-                            {/* Cabecera de temporada */}
-                            {seasonNumbers.length > 1 && (
-                                <div style={{
-                                    display: "flex", alignItems: "center", gap: "12px",
-                                    marginBottom: "1rem",
-                                }}>
-                                    <span style={{
-                                        padding: "4px 14px", borderRadius: "8px",
-                                        backgroundColor: "rgba(37,99,235,0.15)",
-                                        border: "1px solid rgba(37,99,235,0.25)",
-                                        color: "#60a5fa", fontWeight: "800",
-                                        fontSize: "0.8rem", letterSpacing: "0.5px",
-                                        textTransform: "uppercase",
-                                    }}>
-                                        Temporada {seasonNum}
-                                    </span>
-                                    <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(255,255,255,0.06)" }} />
-                                </div>
-                            )}
+                    {/* Tabs: ENLACES / EPISODIOS */}
+                    <TitleTabs
+                        servers={displayServers}
+                        isSeriesOrAnime={isSeriesOrAnime}
+                        episodes={episodes}
+                    />
+                </main>
 
-                            {/* Episodios de esta temporada */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                {seasons[seasonNum].map((ep) => (
-                                    <Link
-                                        key={ep.id}
-                                        href={`/watch/episode/${ep.id}`}
-                                        style={{ textDecoration: "none" }}
-                                    >
-                                        <div className="ep-row" style={{
-                                            display: "flex", alignItems: "center", gap: "16px",
-                                            padding: "14px 20px",
-                                            backgroundColor: "rgba(255,255,255,0.03)",
-                                            border: "1px solid rgba(255,255,255,0.06)",
-                                            borderRadius: "12px",
-                                            transition: "all 0.2s",
-                                            cursor: "pointer",
-                                        }}>
-                                            {/* Miniatura */}
-                                            <div style={{
-                                                width: "120px", height: "68px", borderRadius: "8px",
-                                                overflow: "hidden", flexShrink: 0,
-                                                backgroundColor: "rgba(255,255,255,0.05)",
-                                                position: "relative",
-                                            }}>
-                                                {ep.thumbnailUrl ? (
-                                                    <img
-                                                        src={ep.thumbnailUrl}
-                                                        alt={ep.title}
-                                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                                    />
-                                                ) : (
-                                                    <div style={{
-                                                        width: "100%", height: "100%",
-                                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                                        fontSize: "1.5rem",
-                                                    }}>
-                                                        ▶
-                                                    </div>
-                                                )}
-                                                {/* Play overlay */}
-                                                <div style={{
-                                                    position: "absolute", inset: 0,
-                                                    backgroundColor: "rgba(0,0,0,0.3)",
-                                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                                    opacity: 0, transition: "opacity 0.2s",
-                                                }}
-                                                    className="ep-play-overlay"
-                                                >
-                                                    <span style={{ fontSize: "1.2rem", color: "white" }}>▶</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Número */}
-                                            <div style={{
-                                                width: "36px", flexShrink: 0, textAlign: "center",
-                                                fontSize: "1.1rem", fontWeight: "900",
-                                                color: "rgba(255,255,255,0.25)",
-                                            }}>
-                                                {ep.episodeNumber}
-                                            </div>
-
-                                            {/* Info */}
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{
-                                                    fontWeight: "700", color: "white",
-                                                    fontSize: "0.95rem", marginBottom: "4px",
-                                                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                                }}>
-                                                    {ep.title}
-                                                </div>
-                                                <div style={{
-                                                    fontSize: "0.8rem", color: "rgba(255,255,255,0.4)",
-                                                    overflow: "hidden", textOverflow: "ellipsis",
-                                                    display: "-webkit-box",
-                                                    WebkitLineClamp: 2,
-                                                    WebkitBoxOrient: "vertical",
-                                                }}>
-                                                    {ep.description || "Sin descripción"}
-                                                </div>
-                                            </div>
-
-                                            {/* Duración + flecha */}
-                                            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
-                                                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.8rem", fontWeight: "600" }}>
-                                                    {movie.duration}
+                {/* ── RIGHT: similares ──────────────────────────── */}
+                {similarMovies.length > 0 && (
+                    <aside>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "1rem" }}>
+                            <div style={{ width: "3px", height: "16px", backgroundColor: "#e50914", borderRadius: "2px" }} />
+                            <h3 style={{ fontSize: "0.82rem", fontWeight: "800", letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                                SIMILARES
+                            </h3>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            {similarMovies.map(m => {
+                                const href = (m.type === "SERIE" || m.type === "ANIME") ? `/series/${m.id}` : `/title/${m.id}`;
+                                return (
+                                    <Link key={m.id} href={href} style={{ textDecoration: "none", display: "flex", gap: "10px", alignItems: "center" }} className="similar-row">
+                                        <div style={{ position: "relative", flexShrink: 0, width: "90px", height: "52px", borderRadius: "6px", overflow: "hidden", backgroundColor: "#1e293b" }}>
+                                            <img src={m.thumbnailUrl} alt={m.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                                            {m.rating && (
+                                                <span style={{ position: "absolute", top: "3px", left: "3px", fontSize: "0.62rem", fontWeight: "800", backgroundColor: "rgba(0,0,0,0.75)", color: "#eab308", padding: "1px 5px", borderRadius: "3px" }}>
+                                                    ★ {m.rating}
                                                 </span>
-                                                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "1rem" }}>›</span>
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: "0.82rem", fontWeight: "700", color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                {m.title}
                                             </div>
                                         </div>
                                     </Link>
-                                ))}
-                            </div>
+                                );
+                            })}
                         </div>
-                    ))}
-                </div>
-            )}
-        <style dangerouslySetInnerHTML={{ __html: `
-            .ep-row:hover {
-                background-color: rgba(255,255,255,0.07) !important;
-                border-color: rgba(37,99,235,0.3) !important;
-            }
-            .server-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 0.75rem 1.6rem;
-                background-color: rgba(229,9,20,0.85);
-                color: white;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 800;
-                font-size: 0.88rem;
-                letter-spacing: 0.5px;
-                transition: background 0.2s, transform 0.15s;
-                border: 1px solid rgba(255,255,255,0.1);
-            }
-            .server-btn:hover {
-                background-color: rgba(229,9,20,1);
-                transform: scale(1.03);
-            }
-            .server-btn-quality {
-                font-size: 0.65rem;
-                font-weight: 700;
-                padding: 2px 7px;
-                border-radius: 4px;
-                background-color: rgba(0,0,0,0.35);
-                letter-spacing: 0.3px;
-            }
-        `}} />
+                    </aside>
+                )}
+            </div>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                .ep-row:hover {
+                    background-color: rgba(255,255,255,0.07) !important;
+                    border-color: rgba(37,99,235,0.3) !important;
+                }
+                .similar-row:hover img {
+                    opacity: 0.8;
+                    transition: opacity 0.2s;
+                }
+                @media (max-width: 900px) {
+                    .title-grid { grid-template-columns: 1fr !important; }
+                }
+            `}} />
         </div>
     );
 }
