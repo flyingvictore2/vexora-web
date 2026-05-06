@@ -304,8 +304,14 @@ export default function Navbar() {
                                         <Link href="/account" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
                                             ⚙️ Configuración de cuenta
                                         </Link>
+                                        <Link href="/settings" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
+                                            🎨 Personalización
+                                        </Link>
                                         <Link href="/list" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
                                             🔖 Mi lista
+                                        </Link>
+                                        <Link href="/achievements" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
+                                            🏆 Logros y nivel
                                         </Link>
                                     </div>
 

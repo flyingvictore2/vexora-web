@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PreferencesProvider from "@/components/PreferencesProvider";
 import React from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -57,11 +58,13 @@ export default async function RootLayout({
         <html lang="es" suppressHydrationWarning>
             <body className={inter.className}>
                 <Providers>
-                    <Navbar />
-                    <main className="page-wrapper">
-                        {children}
-                    </main>
-                    <Footer />
+                    <PreferencesProvider>
+                        <Navbar />
+                        <main className="page-wrapper">
+                            {children}
+                        </main>
+                        <Footer />
+                    </PreferencesProvider>
                 </Providers>
             </body>
         </html>
