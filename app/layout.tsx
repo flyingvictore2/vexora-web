@@ -12,6 +12,7 @@ import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
 import MaintenancePage from "./maintenance/page";
 import { ensureMigrations } from "@/lib/migrate";
+import { LangProvider } from "@/components/LangProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -60,13 +61,15 @@ export default async function RootLayout({
         <html lang="es" suppressHydrationWarning>
             <body className={inter.className}>
                 <Providers>
-                    <PreferencesProvider>
-                        <Navbar />
-                        <main className="page-wrapper">
-                            {children}
-                        </main>
-                        <Footer />
-                    </PreferencesProvider>
+                    <LangProvider>
+                        <PreferencesProvider>
+                            <Navbar />
+                            <main className="page-wrapper">
+                                {children}
+                            </main>
+                            <Footer />
+                        </PreferencesProvider>
+                    </LangProvider>
                 </Providers>
             </body>
         </html>

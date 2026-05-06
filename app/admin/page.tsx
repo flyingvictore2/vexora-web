@@ -26,8 +26,22 @@ export default function AdminDashboard() {
         }
     }, []);
 
+    const [seedMsg, setSeedMsg] = useState<string | null>(null);
+
+    const seedAchievements = async () => {
+        setSeedMsg("Sembrando...");
+        try {
+            const r = await fetch("/api/admin/seed-achievements", { method: "POST" });
+            const d = await r.json();
+            setSeedMsg(d.error ? `❌ ${d.error}` : `✅ ${d.created} logros sembrados (${d.total} total)`);
+        } catch { setSeedMsg("❌ Error"); }
+        setTimeout(() => setSeedMsg(null), 4000);
+    };
+
     useEffect(() => {
         fetchStats();
+        // Auto-seed achievements silently on first load
+        fetch("/api/admin/seed-achievements", { method: "POST" }).catch(() => {});
     }, [fetchStats]);
 
     if (loading) {
@@ -42,7 +56,13 @@ export default function AdminDashboard() {
         <div style={{ maxWidth: "1400px" }}>
             <header style={{ marginBottom: "3rem" }}>
                 <h1 style={{ fontSize: "2.5rem", fontWeight: "900", letterSpacing: "-1.5px", marginBottom: "0.5rem" }}>Panel de Control</h1>
-                <p style={{ color: "var(--text-secondary)" }}>Resumen operativo de la plataforma Series.ly</p>
+                <p style={{ color: "var(--text-secondary)" }}>Resumen operativo de la plataforma</p>
+                <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
+                    <button onClick={seedAchievements} style={{ padding: "7px 16px", background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.3)", color: "#a5b4fc", borderRadius: "8px", fontWeight: "700", fontSize: "12px", cursor: "pointer" }}>
+                        🏆 Sembrar logros
+                    </button>
+                    {seedMsg && <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.6)", padding: "7px 0" }}>{seedMsg}</span>}
+                </div>
             </header>
 
             {/* Stats Grid */}

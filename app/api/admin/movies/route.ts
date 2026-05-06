@@ -35,6 +35,7 @@ export async function POST(req: Request) {
                 description: body.description,
                 thumbnailUrl: body.thumbnailUrl,
                 videoUrl: body.videoUrl,
+                trailerUrl: body.trailerUrl || null,
                 duration: body.duration,
                 genre: body.genre,
                 rating: body.rating,

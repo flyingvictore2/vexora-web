@@ -5,9 +5,11 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import styles from "./Navbar.module.css";
+import { useT } from "@/components/LangProvider";
 
 export default function Navbar() {
     const { data: session } = useSession();
+    const { t } = useT();
     const [scrolled, setScrolled] = useState(false);
     const [showDropdown, setShowDropdown] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -19,6 +21,7 @@ export default function Navbar() {
         movies: true, series: true, animes: true, list: true,
         calendar: true, requests: true, support: true, plans: true, search: true,
     });
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const pathname = usePathname();
     const router = useRouter();
 
@@ -38,13 +41,23 @@ export default function Navbar() {
             })
             .catch(() => { });
 
-        // Initial notification fetch
+        // Initial notification fetch + avatar GIF
         const selectedProfileId = localStorage.getItem("selectedProfileId");
         if (selectedProfileId) {
             fetch(`/api/notifications?profileId=${selectedProfileId}`)
                 .then(res => res.json())
                 .then(data => setNotifications(Array.isArray(data) ? data : []))
                 .catch(err => console.error("Error fetching notifications", err));
+
+            // Load GIF avatar from prefs cache or API
+            const cached = localStorage.getItem("prefs");
+            if (cached) {
+                try { const p = JSON.parse(cached); if (p.avatarGifUrl) setAvatarUrl(p.avatarGifUrl); } catch {}
+            }
+            fetch(`/api/preferences?profileId=${selectedProfileId}`)
+                .then(r => r.json())
+                .then(p => { if (p?.avatarGifUrl) setAvatarUrl(p.avatarGifUrl); })
+                .catch(() => {});
         }
 
         // Poll for notifications every 2 minutes
@@ -119,19 +132,19 @@ export default function Navbar() {
                         <span style={{ color: '#2563eb' }}>●</span> {siteName}
                     </Link>
                     <div className={styles.links}>
-                        <Link href="/" className={pathname === '/' ? styles.active : ''}>INICIO</Link>
+                        <Link href="/" className={pathname === '/' ? styles.active : ''}>{t("nav.home")}</Link>
                         {session && (session.user as any).role === 'ADMIN' && (
-                            <Link href="/admin" style={{ color: 'var(--primary)', fontWeight: '800' }}>PANEL ADMIN</Link>
+                            <Link href="/admin" style={{ color: 'var(--primary)', fontWeight: '800' }}>{t("nav.admin")}</Link>
                         )}
-                        {sections.movies   && <Link href="/movies"   className={pathname === '/movies'   ? styles.active : ''}>PELÍCULAS</Link>}
-                        {sections.series   && <Link href="/series"   className={pathname === '/series'   ? styles.active : ''}>SERIES</Link>}
-                        {sections.animes   && <Link href="/animes"   className={pathname === '/animes'   ? styles.active : ''}>ANIMES</Link>}
-                        {sections.list     && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>LISTAS</Link>}
-                        <Link href="/discover" className={pathname === '/discover' ? styles.active : ''}>DESCUBRIR</Link>
-                        {sections.calendar && <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>CALENDARIO</Link>}
-                        {sections.requests && <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>SOLICITUDES</Link>}
-                        {sections.support  && <Link href="/support"  className={pathname === '/support'  ? styles.active : ''}>SOPORTE</Link>}
-                        {sections.plans    && <Link href="/plans"    className={pathname === '/plans'    ? styles.active : ''}>PLANES</Link>}
+                        {sections.movies   && <Link href="/movies"   className={pathname === '/movies'   ? styles.active : ''}>{t("nav.movies")}</Link>}
+                        {sections.series   && <Link href="/series"   className={pathname === '/series'   ? styles.active : ''}>{t("nav.series")}</Link>}
+                        {sections.animes   && <Link href="/animes"   className={pathname === '/animes'   ? styles.active : ''}>{t("nav.animes")}</Link>}
+                        {sections.list     && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>{t("nav.list")}</Link>}
+                        <Link href="/discover" className={pathname === '/discover' ? styles.active : ''}>{t("nav.discover")}</Link>
+                        {sections.calendar && <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>{t("nav.calendar")}</Link>}
+                        {sections.requests && <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>{t("nav.requests")}</Link>}
+                        {sections.support  && <Link href="/support"  className={pathname === '/support'  ? styles.active : ''}>{t("nav.support")}</Link>}
+                        {sections.plans    && <Link href="/plans"    className={pathname === '/plans'    ? styles.active : ''}>{t("nav.plans")}</Link>}
                     </div>
                 </div>
 
@@ -250,7 +263,7 @@ export default function Navbar() {
                                     </span>
                                 )}
                                 <img
-                                    src={session.user?.image || "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png"}
+                                    src={avatarUrl || session.user?.image || "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png"}
                                     alt="Profile"
                                     className={styles.avatar}
                                 />
@@ -277,9 +290,9 @@ export default function Navbar() {
                                     <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(255,255,255,0.02)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                             <img
-                                                src={session.user?.image || "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png"}
+                                                src={avatarUrl || session.user?.image || "https://upload.wikimedia.org/wikipedia/commons/0/0b/Netflix-avatar.png"}
                                                 alt="Profile"
-                                                style={{ width: '40px', height: '40px', borderRadius: '8px' }}
+                                                style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }}
                                             />
                                             <div style={{ minWidth: 0 }}>
                                                 <div style={{ fontSize: '14px', fontWeight: '700', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -291,7 +304,7 @@ export default function Navbar() {
                                             </div>
                                         </div>
                                         <Link href="/profiles" style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700', textDecoration: 'none' }}>
-                                            Administrar perfiles
+                                            {t("nav.profiles")}
                                         </Link>
                                     </div>
 
@@ -303,13 +316,13 @@ export default function Navbar() {
                                             </Link>
                                         )}
                                         <Link href="/account" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
-                                            ⚙️ Configuración de cuenta
+                                            ⚙️ {t("nav.account")}
                                         </Link>
                                         <Link href="/list" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
-                                            🔖 Mi lista
+                                            🔖 {t("nav.mylist")}
                                         </Link>
                                         <Link href="/achievements" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
-                                            🏆 Logros y nivel
+                                            🏆 {t("nav.achievements")}
                                         </Link>
                                     </div>
 
@@ -331,7 +344,7 @@ export default function Navbar() {
                                         >
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span style={{ fontSize: '13px' }}>🌐</span>
-                                                <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>Social</span>
+                                                <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>{t("nav.social")}</span>
                                                 <span style={{
                                                     fontSize: '9px',
                                                     fontWeight: '800',
@@ -343,7 +356,7 @@ export default function Navbar() {
                                                     border: '1px solid rgba(99,102,241,0.3)',
                                                     color: '#a5b4fc',
                                                 }}>
-                                                    Próximamente
+                                                    {t("nav.soon")}
                                                 </span>
                                             </span>
                                             <span style={{
@@ -359,10 +372,10 @@ export default function Navbar() {
                                         {showSocial && (
                                             <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', paddingBottom: '4px' }}>
                                                 {[
-                                                    { icon: '👥', label: 'Amigos' },
-                                                    { icon: '💬', label: 'Chat' },
-                                                    { icon: '🎉', label: 'Watch Party' },
-                                                ].map(item => (
+                                                    { icon: '👥', label: t("nav.friends") },
+                                                    { icon: '💬', label: t("nav.chat") },
+                                                    { icon: '🎉', label: t("nav.watchparty") },
+                                                ].map((item: {icon: string; label: string}) => (
                                                     <div
                                                         key={item.label}
                                                         style={{
@@ -391,7 +404,7 @@ export default function Navbar() {
                                             onClick={handleLogout}
                                             style={{ width: '100%', padding: '12px 20px', fontSize: '13px', color: '#ef4444', textAlign: 'left', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '700' }}
                                         >
-                                            Cerrar sesión de {siteName}
+                                            {t("nav.logout")} {siteName}
                                         </button>
                                     </div>
 
@@ -406,7 +419,7 @@ export default function Navbar() {
                         </div>
                     ) : (
                         <Link href="/auth/login" className="btn btn-primary" style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem', fontWeight: '700', borderRadius: '6px' }}>
-                            INICIAR SESIÓN
+                            {t("nav.login")}
                         </Link>
                     )}
 

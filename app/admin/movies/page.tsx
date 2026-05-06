@@ -15,6 +15,7 @@ interface Movie {
     type: string;
     requiredPlan: string;
     releaseDate?: string | null;
+    trailerUrl?: string | null;
 }
 
 interface Episode {
@@ -72,6 +73,7 @@ const EMPTY_FORM = {
     description: "",
     thumbnailUrl: "",
     videoUrl: "",
+    trailerUrl: "",
     duration: "",
     rating: "G",
     type: "MOVIE",
@@ -330,6 +332,7 @@ export default function AdminMovies() {
             description: movie.description,
             thumbnailUrl: movie.thumbnailUrl,
             videoUrl: movie.videoUrl,
+            trailerUrl: movie.trailerUrl || "",
             duration: movie.duration,
             rating: movie.rating,
             type: movie.type || "MOVIE",
@@ -574,6 +577,18 @@ export default function AdminMovies() {
                                     <div>
                                         <label style={labelStyle}>URL del Video</label>
                                         <input placeholder="https://..." value={formData.videoUrl} onChange={e => setFormData({ ...formData, videoUrl: e.target.value })} required style={inputStyle} />
+                                    </div>
+                                    <div style={{ gridColumn: "span 2" }}>
+                                        <label style={labelStyle}>URL del Tráiler (opcional) — YouTube embed</label>
+                                        <input
+                                            placeholder="https://www.youtube.com/embed/VIDEO_ID?autoplay=1&mute=1"
+                                            value={(formData as any).trailerUrl || ""}
+                                            onChange={e => setFormData({ ...formData, trailerUrl: e.target.value } as any)}
+                                            style={inputStyle}
+                                        />
+                                        <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)", marginTop: "5px" }}>
+                                            Se reproduce automáticamente al pasar el cursor sobre la miniatura en las filas de inicio.
+                                        </p>
                                     </div>
 
                                     {/* DURACIÓN + CALIFICACIÓN */}

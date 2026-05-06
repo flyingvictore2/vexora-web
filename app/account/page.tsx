@@ -5,6 +5,8 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import InvoiceDownloader from "@/components/InvoiceDownloader";
+import { useT } from "@/components/LangProvider";
+import type { Lang } from "@/lib/i18n";
 
 type Tab = "perfil" | "personalizacion" | "seguridad" | "suscripcion" | "facturacion";
 
@@ -124,6 +126,7 @@ function applyTheme(prefs: any) {
 export default function AccountPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const { setLang } = useT();
     const searchParams = useSearchParams();
     const initialTab = (searchParams.get("tab") as Tab) || "perfil";
     const [tab, setTab] = useState<Tab>(initialTab);
@@ -225,8 +228,10 @@ export default function AccountPage() {
     const updatePrefs = (patch: any) => {
         const next = { ...prefs, ...patch };
         setPrefs(next);
-        // Live preview
+        // Live preview — theme
         applyTheme(next);
+        // Live preview — language
+        if (patch.language) setLang(patch.language as Lang);
     };
 
     const savePrefs = async () => {
@@ -416,6 +421,35 @@ export default function AccountPage() {
                                 </div>
                             )}
                         </div>
+                    </Card>
+
+                    {/* Idioma */}
+                    <Card>
+                        <SectionTitle>Idioma de la interfaz</SectionTitle>
+                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            {([
+                                { id: "es", name: "Español",    flag: "🇪🇸" },
+                                { id: "en", name: "English",    flag: "🇬🇧" },
+                                { id: "pt", name: "Português",  flag: "🇵🇹" },
+                                { id: "fr", name: "Français",   flag: "🇫🇷" },
+                            ] as { id: Lang; name: string; flag: string }[]).map(l => (
+                                <button key={l.id} onClick={() => updatePrefs({ language: l.id })} style={{
+                                    padding: "12px 18px", borderRadius: "10px", cursor: "pointer",
+                                    background: prefs.language === l.id ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
+                                    border: `2px solid ${prefs.language === l.id ? "#6366f1" : "rgba(255,255,255,0.08)"}`,
+                                    color: prefs.language === l.id ? "#a5b4fc" : "rgba(255,255,255,0.7)",
+                                    fontWeight: 700, fontSize: "14px", transition: "all 0.15s",
+                                    display: "flex", alignItems: "center", gap: "8px",
+                                }}>
+                                    <span style={{ fontSize: "20px" }}>{l.flag}</span>
+                                    {l.name}
+                                    {prefs.language === l.id && <span style={{ fontSize: "11px", opacity: 0.7 }}>✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.35)", marginTop: "10px" }}>
+                            Cambia el idioma de los menús y textos de la interfaz al instante.
+                        </p>
                     </Card>
 
                     {/* Accesibilidad */}
