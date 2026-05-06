@@ -15,6 +15,7 @@ export interface Movie {
     rating: string;
     year: number;
     type: string;
+    trailerUrl?: string | null;
 }
 
 interface RowProps {
@@ -60,12 +61,26 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                             : `/title/${movie.id}`;
                         const pct = progressMap?.[movie.id];
                         return (
-                            <Link key={movie.id} href={href} className={styles.posterWrapper} style={{ position: "relative" }}>
+                            <Link key={movie.id} href={href} className={`${styles.posterWrapper} trailer-host`} style={{ position: "relative" }}>
                                 <img
                                     src={movie.thumbnailUrl}
                                     alt={movie.title}
                                     className={styles.poster}
                                 />
+                                {movie.trailerUrl && (
+                                    <iframe
+                                        className="trailer-iframe"
+                                        src={movie.trailerUrl}
+                                        style={{
+                                            position: "absolute", inset: 0,
+                                            width: "100%", height: "100%",
+                                            border: "none", opacity: 0,
+                                            pointerEvents: "none",
+                                            transition: "opacity 0.3s",
+                                        }}
+                                        loading="lazy"
+                                    />
+                                )}
                                 <div className={styles.overlay}>
                                     <div className={styles.playBtn}>▶</div>
                                     <p className={styles.overlayTitle}>{movie.title}</p>

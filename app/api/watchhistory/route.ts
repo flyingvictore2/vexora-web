@@ -70,6 +70,17 @@ export async function POST(req: Request) {
             DO UPDATE SET progress = GREATEST("watchhistory".progress, $4), "updatedAt" = $5::timestamp
         `, id, profileId, movieId, progressVal, now);
 
+        // Increment movie views
+        await prisma.$executeRawUnsafe(
+            `ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`
+        ).catch(() => {});
+        if (progressVal === 100) {
+            await prisma.$executeRawUnsafe(
+                `UPDATE "movie" SET "views" = COALESCE("views", 0) + 1 WHERE id = $1`,
+                movieId
+            ).catch(() => {});
+        }
+
         return NextResponse.json({ ok: true });
     } catch (err: any) {
         console.error("Save watchhistory error:", err);

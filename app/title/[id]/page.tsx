@@ -4,6 +4,7 @@ import AddToListButton from "@/components/AddToListButton";
 import TitleTabs from "./TitleTabs";
 import BackButton from "@/components/BackButton";
 import RatingStars from "@/components/RatingStars";
+import TitleActions from "@/components/TitleActions";
 
 export default async function TitlePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -152,6 +153,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                             </Link>
                         )}
                         <AddToListButton movieId={movie.id} />
+                        <TitleActions movieId={movie.id} />
                     </div>
 
                     {/* Sinopsis */}
@@ -176,6 +178,7 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                         servers={displayServers}
                         isSeriesOrAnime={isSeriesOrAnime}
                         episodes={episodes}
+                        movieId={movie.id}
                     />
                 </main>
 

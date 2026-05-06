@@ -29,6 +29,7 @@ export default function Home() {
     const [movies, setMovies] = useState<any[]>([]);
     const [recommendations, setRecommendations] = useState<any[]>([]);
     const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
+    const [nextEpisodes, setNextEpisodes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -46,14 +47,19 @@ export default function Home() {
 
     const fetchContent = async (profileId: string) => {
         try {
-            const [moviesRes, recommendationsRes, historyRes] = await Promise.all([
+            const [moviesRes, recommendationsRes, historyRes, nextRes, hiddenRes] = await Promise.all([
                 axios.get("/api/movies"),
                 axios.get(`/api/movies/recommendations?profileId=${profileId}`),
                 axios.get(`/api/watchhistory?profileId=${profileId}`),
+                axios.get(`/api/next-episode?profileId=${profileId}`),
+                axios.get(`/api/hidden?profileId=${profileId}`),
             ]);
-            setMovies(moviesRes.data);
-            setRecommendations(recommendationsRes.data);
+            const hiddenSet = new Set<string>(Array.isArray(hiddenRes.data) ? hiddenRes.data : []);
+            const filterHidden = (arr: any[]) => arr.filter(m => !hiddenSet.has(m.id));
+            setMovies(filterHidden(moviesRes.data));
+            setRecommendations(filterHidden(recommendationsRes.data));
             setWatchHistory(historyRes.data || []);
+            setNextEpisodes(nextRes.data || []);
         } catch (error) {
             console.error(error);
         } finally {
@@ -122,6 +128,45 @@ export default function Home() {
                 position: 'relative',
                 zIndex: 2,
             }}>
+                {nextEpisodes.length > 0 && (
+                    <div style={{ padding: "0 4%", marginBottom: "2.5rem" }}>
+                        <h2 style={{ fontSize: "1.3rem", fontWeight: "700", marginBottom: "0.75rem", color: "var(--foreground)" }}>
+                            ▶ Tu próximo episodio
+                        </h2>
+                        <div style={{ display: "flex", gap: "10px", overflowX: "auto", scrollbarWidth: "none", paddingBottom: "8px" }}>
+                            {nextEpisodes.map((ne: any) => (
+                                <a key={ne.episode.id} href={`/watch/episode/${ne.episode.id}`} style={{
+                                    flex: "0 0 auto", width: "320px",
+                                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
+                                    borderRadius: "10px", overflow: "hidden", textDecoration: "none", color: "white",
+                                    transition: "transform 0.2s",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                >
+                                    <div style={{ width: "100%", aspectRatio: "16/9", background: "#1e293b", overflow: "hidden", position: "relative" }}>
+                                        {(ne.episode.thumbnailUrl || ne.seriesThumbnail) && (
+                                            <img src={ne.episode.thumbnailUrl || ne.seriesThumbnail} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                        )}
+                                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.85), transparent 50%)" }} />
+                                        <div style={{ position: "absolute", top: "8px", left: "8px", padding: "3px 8px", background: "rgba(99,102,241,0.85)", color: "white", fontSize: "0.65rem", fontWeight: "800", borderRadius: "4px", letterSpacing: "0.5px" }}>
+                                            S{ne.episode.seasonNumber}·E{ne.episode.episodeNumber}
+                                        </div>
+                                    </div>
+                                    <div style={{ padding: "10px 14px" }}>
+                                        <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.5)", marginBottom: "3px", textTransform: "uppercase", letterSpacing: "0.6px", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            {ne.seriesTitle}
+                                        </div>
+                                        <div style={{ fontSize: "0.9rem", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                            {ne.episode.title}
+                                        </div>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {continueWatching.length > 0 && (
                     <Row title="▶ Seguir viendo" movies={continueWatching} progressMap={progressMap} />
                 )}

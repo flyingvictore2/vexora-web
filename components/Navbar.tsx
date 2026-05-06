@@ -127,6 +127,7 @@ export default function Navbar() {
                         {sections.series   && <Link href="/series"   className={pathname === '/series'   ? styles.active : ''}>SERIES</Link>}
                         {sections.animes   && <Link href="/animes"   className={pathname === '/animes'   ? styles.active : ''}>ANIMES</Link>}
                         {sections.list     && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>LISTAS</Link>}
+                        <Link href="/discover" className={pathname === '/discover' ? styles.active : ''}>DESCUBRIR</Link>
                         {sections.calendar && <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>CALENDARIO</Link>}
                         {sections.requests && <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>SOLICITUDES</Link>}
                         {sections.support  && <Link href="/support"  className={pathname === '/support'  ? styles.active : ''}>SOPORTE</Link>}

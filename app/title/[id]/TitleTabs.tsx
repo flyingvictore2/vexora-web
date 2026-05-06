@@ -14,6 +14,7 @@ interface Props {
     servers: Server[];
     isSeriesOrAnime: boolean;
     episodes: Episode[];
+    movieId?: string;
 }
 
 function qualityStyle(q: string) {
@@ -24,7 +25,18 @@ function qualityStyle(q: string) {
     return                         { bg: "rgba(234,179,8,0.2)",  color: "#fbbf24", border: "rgba(234,179,8,0.4)" };
 }
 
-export default function TitleTabs({ servers, isSeriesOrAnime, episodes }: Props) {
+export default function TitleTabs({ servers, isSeriesOrAnime, episodes, movieId }: Props) {
+    const markSeasonWatched = async (seasonNumber: number) => {
+        const profileId = localStorage.getItem("selectedProfileId");
+        if (!profileId || !movieId) return;
+        await fetch("/api/watchhistory/season", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profileId, movieId, seasonNumber, mark: true }),
+        });
+        alert(`Temporada ${seasonNumber} marcada como vista`);
+    };
+
     const defaultTab = isSeriesOrAnime ? "episodios" : "enlaces";
     const [activeTab, setActiveTab] = useState(defaultTab);
 
@@ -128,14 +140,18 @@ export default function TitleTabs({ servers, isSeriesOrAnime, episodes }: Props)
                     )}
                     {seasonNumbers.map(seasonNum => (
                         <div key={seasonNum}>
-                            {seasonNumbers.length > 1 && (
-                                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1rem" }}>
-                                    <span style={{ padding: "4px 14px", borderRadius: "8px", backgroundColor: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.25)", color: "#60a5fa", fontWeight: "800", fontSize: "0.78rem", textTransform: "uppercase" }}>
-                                        Temporada {seasonNum}
-                                    </span>
-                                    <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(255,255,255,0.06)" }} />
-                                </div>
-                            )}
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1rem" }}>
+                                <span style={{ padding: "4px 14px", borderRadius: "8px", backgroundColor: "rgba(37,99,235,0.15)", border: "1px solid rgba(37,99,235,0.25)", color: "#60a5fa", fontWeight: "800", fontSize: "0.78rem", textTransform: "uppercase" }}>
+                                    Temporada {seasonNum}
+                                </span>
+                                <button
+                                    onClick={() => markSeasonWatched(seasonNum)}
+                                    style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", color: "#34d399", padding: "4px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: "800", cursor: "pointer", letterSpacing: "0.5px", textTransform: "uppercase" }}
+                                >
+                                    ✓ Marcar como vista
+                                </button>
+                                <div style={{ flex: 1, height: "1px", backgroundColor: "rgba(255,255,255,0.06)" }} />
+                            </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                                 {seasons[seasonNum].map(ep => (
                                     <Link key={ep.id} href={`/watch/episode/${ep.id}`} className="ep-row" style={{

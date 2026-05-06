@@ -180,6 +180,12 @@ button {
   background: #374151;
 }
 
+/* Trailer-on-hover — fades in after 0.7s of hover */
+.trailer-host:hover .trailer-iframe {
+  opacity: 1;
+  transition: opacity 0.3s 0.7s;
+}
+
 /* Reduced motion */
 .reduced-motion *,
 .reduced-motion *::before,
