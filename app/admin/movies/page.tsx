@@ -435,6 +435,11 @@ export default function AdminMovies() {
                                             <div>
                                                 <div style={{ fontWeight: "800", color: "white" }}>{movie.title}</div>
                                                 <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{movie.duration}</div>
+                                                {movie.releaseDate && new Date(movie.releaseDate) > new Date() && (
+                                                    <div style={{ marginTop: "4px", fontSize: "0.7rem", fontWeight: "800", color: "#f59e0b", display: "flex", alignItems: "center", gap: "4px" }}>
+                                                        ⏰ OCULTO — estreno {new Date(movie.releaseDate).toLocaleDateString("es-ES")}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </td>
