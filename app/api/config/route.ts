@@ -1,56 +1,55 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const NAV_KEYS = ["nav.movies","nav.series","nav.animes","nav.list","nav.calendar","nav.requests","nav.support","nav.plans","nav.search"];
+const NAV_SECTIONS = [
+    "movies","series","animes","list","calendar",
+    "requests","support","plans","search","social",
+];
+
+function resolveSection(raw: string | undefined, isAdmin: boolean): "visible" | "soon" | "hidden" {
+    if (!raw || raw === "visible" || raw === "true") return "visible";
+    if (raw === "soon_all") return "soon";
+    if (raw === "soon_non_admins") return isAdmin ? "visible" : "soon";
+    if (raw === "hidden_all") return "hidden";
+    if (raw === "hidden_non_admins") return isAdmin ? "visible" : "hidden";
+    if (raw === "false") return "hidden"; // legacy boolean support
+    return "visible";
+}
 
 export async function GET() {
     try {
-        const settings = await prisma.setting.findMany({
-            where: {
-                key: {
-                    in: ["siteName", "allowNewRegistrations", "stripeEnabled", "paypalEnabled", "maintenanceTime", ...NAV_KEYS]
-                }
-            }
-        });
+        const session = await getServerSession(authOptions);
+        const isAdmin = (session?.user as any)?.role === "ADMIN";
 
-        const settingsObj = settings.reduce((acc: Record<string, unknown>, curr) => {
-            if (curr.key === "siteName" || curr.key === "maintenanceTime") {
-                acc[curr.key] = curr.value;
-            } else {
-                acc[curr.key] = curr.value !== "false";
-            }
-            return acc;
-        }, {
-            siteName: "Vexora",
-            allowNewRegistrations: true,
-            stripeEnabled: true,
-            paypalEnabled: true,
-            maintenanceTime: "30 MINUTOS",
-            // Nav sections default to visible
-            "nav.movies": true, "nav.series": true, "nav.animes": true,
-            "nav.list": true, "nav.calendar": true, "nav.requests": true,
-            "nav.support": true, "nav.plans": true, "nav.search": true,
-        } as Record<string, unknown>);
+        const keys = [
+            "siteName","allowNewRegistrations","stripeEnabled","paypalEnabled","maintenanceTime",
+            ...NAV_SECTIONS.map(k => `nav.${k}`),
+        ];
+        const settings = await prisma.setting.findMany({ where: { key: { in: keys } } });
+        const raw = Object.fromEntries(settings.map(s => [s.key, s.value]));
 
-        // Build sections object for easy consumption
-        const sections: Record<string, boolean> = {};
-        for (const k of NAV_KEYS) {
-            sections[k.replace("nav.", "")] = settingsObj[k] !== false;
+        const sections: Record<string, "visible" | "soon" | "hidden"> = {};
+        for (const k of NAV_SECTIONS) {
+            sections[k] = resolveSection(raw[`nav.${k}`], isAdmin);
         }
-        settingsObj.sections = sections;
 
-        return NextResponse.json(settingsObj);
+        return NextResponse.json({
+            siteName: raw.siteName || "Vexora",
+            allowNewRegistrations: raw.allowNewRegistrations !== "false",
+            stripeEnabled: raw.stripeEnabled !== "false",
+            paypalEnabled: raw.paypalEnabled !== "false",
+            maintenanceTime: raw.maintenanceTime || "30 MINUTOS",
+            sections,
+        });
     } catch (error) {
         console.error("Error fetching public config:", error);
         return NextResponse.json({
             siteName: "Vexora",
-            allowNewRegistrations: true,
-            stripeEnabled: true,
-            paypalEnabled: true,
-            maintenanceTime: "30 MINUTOS",
-            sections: { movies: true, series: true, animes: true, list: true, calendar: true, requests: true, support: true, plans: true, search: true },
+            sections: Object.fromEntries(NAV_SECTIONS.map(k => [k, "visible" as const])),
         });
     }
 }

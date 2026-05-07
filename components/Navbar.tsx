@@ -17,9 +17,10 @@ export default function Navbar() {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isDark, setIsDark] = useState(true);
     const [siteName, setSiteName] = useState("Vexora");
-    const [sections, setSections] = useState({
-        movies: true, series: true, animes: true, list: true,
-        calendar: true, requests: true, support: true, plans: true, search: true,
+    const [sections, setSections] = useState<Record<string, "visible" | "soon" | "hidden">>({
+        movies: "visible", series: "visible", animes: "visible", list: "visible",
+        calendar: "visible", requests: "visible", support: "visible", plans: "visible",
+        search: "visible", social: "visible",
     });
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const pathname = usePathname();
@@ -37,7 +38,7 @@ export default function Navbar() {
             .then(r => r.json())
             .then(d => {
                 if (d.siteName) setSiteName(d.siteName);
-                if (d.sections) setSections(s => ({ ...s, ...d.sections }));
+                if (d.sections) setSections(prev => ({ ...prev, ...d.sections }));
             })
             .catch(() => { });
 
@@ -119,6 +120,22 @@ export default function Navbar() {
         return null;
     }
 
+    const prontoTag = (
+        <span style={{ fontSize: "0.52rem", background: "#6366f1", color: "white", padding: "1px 5px", borderRadius: "4px", fontWeight: "900", marginLeft: "5px", verticalAlign: "middle", letterSpacing: "0.5px" }}>
+            PRONTO
+        </span>
+    );
+
+    const navLink = (key: string, href: string, label: string) => {
+        const s = sections[key];
+        if (s === "hidden") return null;
+        return (
+            <Link key={key} href={href} className={pathname === href ? styles.active : ''}>
+                {label}{s === "soon" && prontoTag}
+            </Link>
+        );
+    };
+
     const handleLogout = async () => {
         localStorage.removeItem("selectedProfileId");
         await signOut({ callbackUrl: "/auth/login" });
@@ -136,21 +153,25 @@ export default function Navbar() {
                         {session && (session.user as any).role === 'ADMIN' && (
                             <Link href="/admin" style={{ color: 'var(--primary)', fontWeight: '800' }}>{t("nav.admin")}</Link>
                         )}
-                        {sections.movies   && <Link href="/movies"   className={pathname === '/movies'   ? styles.active : ''}>{t("nav.movies")}</Link>}
-                        {sections.series   && <Link href="/series"   className={pathname === '/series'   ? styles.active : ''}>{t("nav.series")}</Link>}
-                        {sections.animes   && <Link href="/animes"   className={pathname === '/animes'   ? styles.active : ''}>{t("nav.animes")}</Link>}
-                        {sections.list     && <Link href="/list"     className={pathname === '/list'     ? styles.active : ''}>{t("nav.list")}</Link>}
+                        {navLink("movies",   "/movies",   t("nav.movies"))}
+                        {navLink("series",   "/series",   t("nav.series"))}
+                        {navLink("animes",   "/animes",   t("nav.animes"))}
+                        {navLink("list",     "/list",     t("nav.list"))}
                         <Link href="/discover" className={pathname === '/discover' ? styles.active : ''}>{t("nav.discover")}</Link>
-                        {sections.calendar && <Link href="/calendar" className={pathname === '/calendar' ? styles.active : ''}>{t("nav.calendar")}</Link>}
-                        {sections.requests && <Link href="/requests" className={pathname === '/requests' ? styles.active : ''}>{t("nav.requests")}</Link>}
-                        {sections.support  && <Link href="/support"  className={pathname === '/support'  ? styles.active : ''}>{t("nav.support")}</Link>}
-                        {sections.plans    && <Link href="/plans"    className={pathname === '/plans'    ? styles.active : ''}>{t("nav.plans")}</Link>}
+                        {navLink("calendar", "/calendar", t("nav.calendar"))}
+                        {navLink("requests", "/requests", t("nav.requests"))}
+                        {navLink("support",  "/support",  t("nav.support"))}
+                        {navLink("plans",    "/plans",    t("nav.plans"))}
                     </div>
                 </div>
 
                 <div className={styles.right}>
                     <div className={styles.iconSet}>
-                        {sections.search && <Link href="/search" className={styles.iconBtn}>🔍</Link>}
+                        {sections.search !== "hidden" && (
+                            <Link href="/search" className={styles.iconBtn} style={{ position: "relative" }}>
+                                🔍{sections.search === "soon" && prontoTag}
+                            </Link>
+                        )}
                         <button className={styles.iconBtn} onClick={toggleTheme}>
                             {isDark ? "🌙" : "☀️"}
                         </button>
@@ -327,6 +348,7 @@ export default function Navbar() {
                                     </div>
 
                                     {/* Social Section */}
+                                    {sections.social !== "hidden" && (
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                         {/* Header — clickable to expand/collapse */}
                                         <button
@@ -345,6 +367,7 @@ export default function Navbar() {
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span style={{ fontSize: '13px' }}>🌐</span>
                                                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>{t("nav.social")}</span>
+                                                {sections.social === "soon" && prontoTag}
                                             </span>
                                             <span style={{
                                                 fontSize: '10px',
@@ -387,6 +410,7 @@ export default function Navbar() {
                                             </div>
                                         )}
                                     </div>
+                                    )}
 
                                     {/* Logout Section */}
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', padding: '8px 0' }}>

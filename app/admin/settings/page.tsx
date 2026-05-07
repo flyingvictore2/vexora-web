@@ -2,6 +2,26 @@
 
 import React, { useEffect, useState } from "react";
 
+const SECTION_DEFS = [
+    { key: "movies",   icon: "🎬", label: "Películas" },
+    { key: "series",   icon: "📺", label: "Series" },
+    { key: "animes",   icon: "⛩️",  label: "Anime" },
+    { key: "list",     icon: "🔖", label: "Mi Lista" },
+    { key: "calendar", icon: "📅", label: "Calendario" },
+    { key: "requests", icon: "📨", label: "Solicitudes" },
+    { key: "support",  icon: "💬", label: "Soporte" },
+    { key: "plans",    icon: "💳", label: "Planes" },
+    { key: "search",   icon: "🔍", label: "Búsqueda" },
+    { key: "social",   icon: "🌐", label: "Social" },
+];
+
+const getStatus = (v: string) =>
+    v.startsWith("soon") ? "soon" : v.startsWith("hidden") ? "hidden" : "visible";
+const getAudience = (v: string) =>
+    v.endsWith("_non_admins") ? "non_admins" : "all";
+const makeVal = (status: string, audience: string) =>
+    status === "visible" ? "visible" : `${status}_${audience}`;
+
 export default function AdminSettings() {
     const [settings, setSettings] = useState({
         siteName: "Series.ly",
@@ -15,6 +35,9 @@ export default function AdminSettings() {
         stripeEnabled: true,
         paypalEnabled: true,
     });
+    const [navSections, setNavSections] = useState<Record<string, string>>(
+        Object.fromEntries(SECTION_DEFS.map(d => [d.key, "visible"]))
+    );
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
@@ -42,6 +65,11 @@ export default function AdminSettings() {
                     stripeEnabled: data.stripeEnabled !== "false",
                     paypalEnabled: data.paypalEnabled !== "false",
                 });
+                const loadedSections: Record<string, string> = {};
+                for (const d of SECTION_DEFS) {
+                    loadedSections[d.key] = data[`nav.${d.key}`] || "visible";
+                }
+                setNavSections(loadedSections);
             } catch (error) {
                 console.error("Error fetching settings:", error);
             } finally {
@@ -58,10 +86,13 @@ export default function AdminSettings() {
     const handleSave = async () => {
         setSaving(true);
         try {
+            const navPayload = Object.fromEntries(
+                SECTION_DEFS.map(d => [`nav.${d.key}`, navSections[d.key]])
+            );
             const res = await fetch("/api/admin/settings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(settings),
+                body: JSON.stringify({ ...settings, ...navPayload }),
             });
             if (!res.ok) throw new Error("Failed");
             showToast("✅ Configuración guardada correctamente en la base de datos.");
@@ -70,6 +101,16 @@ export default function AdminSettings() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const setSectionStatus = (key: string, status: string) => {
+        const aud = getAudience(navSections[key] || "visible");
+        setNavSections(prev => ({ ...prev, [key]: makeVal(status, aud) }));
+    };
+    const setSectionAudience = (key: string, aud: string) => {
+        const st = getStatus(navSections[key] || "visible");
+        if (st === "visible") return;
+        setNavSections(prev => ({ ...prev, [key]: makeVal(st, aud) }));
     };
 
     if (loading) return <div style={{ color: "var(--primary)", textAlign: "center", padding: "100px", fontWeight: "700" }}>Sincronizando configuración...</div>;
@@ -231,6 +272,88 @@ export default function AdminSettings() {
                                 </p>
                             </div>
                         )}
+                    </div>
+                </section>
+
+                {/* Nav Sections */}
+                <section className="glass-card" style={{ padding: "2.5rem", gridColumn: "span 2" }}>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: "800", marginBottom: "0.4rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span>🧭</span> Secciones del Sitio
+                    </h3>
+                    <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginBottom: "1.5rem" }}>
+                        Controla la visibilidad de cada sección en la navegación.
+                    </p>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 40px" }}>
+                        {SECTION_DEFS.map((def, i) => {
+                            const val = navSections[def.key] || "visible";
+                            const st = getStatus(val);
+                            const aud = getAudience(val);
+                            return (
+                                <div key={def.key} style={{
+                                    display: "flex", alignItems: "center", gap: "12px",
+                                    padding: "11px 0",
+                                    borderBottom: i < SECTION_DEFS.length - 2 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                                }}>
+                                    {/* Name */}
+                                    <div style={{ width: "110px", display: "flex", alignItems: "center", gap: "7px", flexShrink: 0 }}>
+                                        <span style={{ fontSize: "1rem" }}>{def.icon}</span>
+                                        <span style={{ fontSize: "0.82rem", fontWeight: "700", color: "white" }}>{def.label}</span>
+                                    </div>
+
+                                    {/* Status buttons */}
+                                    <div style={{ display: "flex", gap: "5px", flex: 1 }}>
+                                        {([
+                                            { v: "visible", label: "✅ Visible",     color: "#10b981" },
+                                            { v: "soon",    label: "🟡 Pronto",      color: "#f59e0b" },
+                                            { v: "hidden",  label: "🔴 Oculto",      color: "#ef4444" },
+                                        ] as { v: string; label: string; color: string }[]).map(opt => {
+                                            const active = st === opt.v;
+                                            return (
+                                                <button key={opt.v} type="button"
+                                                    onClick={() => setSectionStatus(def.key, opt.v)}
+                                                    style={{
+                                                        flex: 1, padding: "5px 4px", borderRadius: "6px",
+                                                        fontSize: "0.68rem", fontWeight: "800", cursor: "pointer",
+                                                        background: active ? `${opt.color}22` : "rgba(255,255,255,0.03)",
+                                                        border: `1px solid ${active ? opt.color + "55" : "rgba(255,255,255,0.07)"}`,
+                                                        color: active ? opt.color : "rgba(255,255,255,0.3)",
+                                                    }}>
+                                                    {opt.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Audience toggle */}
+                                    {st !== "visible" ? (
+                                        <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                                            {([
+                                                { v: "all",        label: "Todos" },
+                                                { v: "non_admins", label: "Usuarios" },
+                                            ] as { v: string; label: string }[]).map(opt => {
+                                                const active = aud === opt.v;
+                                                return (
+                                                    <button key={opt.v} type="button"
+                                                        onClick={() => setSectionAudience(def.key, opt.v)}
+                                                        style={{
+                                                            padding: "5px 8px", borderRadius: "6px",
+                                                            fontSize: "0.65rem", fontWeight: "700", cursor: "pointer",
+                                                            background: active ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.03)",
+                                                            border: `1px solid ${active ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.06)"}`,
+                                                            color: active ? "white" : "rgba(255,255,255,0.3)",
+                                                        }}>
+                                                        {opt.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div style={{ width: "90px", flexShrink: 0 }} />
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
 
