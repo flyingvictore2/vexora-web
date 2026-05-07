@@ -52,6 +52,14 @@ const PLANS = [
     { value: "PREMIUM", label: "🥇 Premium" },
 ];
 
+const GENRES = [
+    "Acción", "Aventura", "Animación", "Ciencia Ficción", "Comedia",
+    "Crimen", "Drama", "Fantasía", "Historia", "Horror",
+    "Misterio", "Música", "Romance", "Suspense", "Terror",
+    "Thriller", "Familiar", "Deportes", "Western", "Bélico",
+    "Superhéroes", "Sobrenatural", "Biopic", "Documental",
+];
+
 const TYPE_COLORS: Record<string, string> = {
     MOVIE: "#2563eb",
     SERIE: "#7c3aed",
@@ -553,15 +561,60 @@ export default function AdminMovies() {
                                         <input placeholder="Ej: Stranger Things" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} required style={inputStyle} />
                                     </div>
 
-                                    {/* GÉNERO + AÑO */}
-                                    <div>
+                                    {/* GÉNERO */}
+                                    <div style={{ gridColumn: "span 2" }}>
                                         <label style={labelStyle}>Género</label>
-                                        <input placeholder="Ej: Ciencia Ficción" value={formData.genre} onChange={e => setFormData({ ...formData, genre: e.target.value })} required style={inputStyle} />
+                                        <div style={{
+                                            padding: "12px 14px",
+                                            backgroundColor: "rgba(255,255,255,0.05)",
+                                            border: "1px solid rgba(255,255,255,0.1)",
+                                            borderRadius: "10px",
+                                            display: "flex", flexWrap: "wrap", gap: "7px",
+                                        }}>
+                                            {GENRES.map(g => {
+                                                const selected = formData.genre.split(",").map(s => s.trim()).filter(Boolean).includes(g);
+                                                return (
+                                                    <button
+                                                        key={g}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = formData.genre ? formData.genre.split(",").map(s => s.trim()).filter(Boolean) : [];
+                                                            const next = selected ? current.filter(x => x !== g) : [...current, g];
+                                                            setFormData({ ...formData, genre: next.join(", ") });
+                                                        }}
+                                                        style={{
+                                                            padding: "5px 13px",
+                                                            borderRadius: "20px",
+                                                            fontSize: "0.75rem",
+                                                            fontWeight: "700",
+                                                            cursor: "pointer",
+                                                            border: "1px solid",
+                                                            backgroundColor: selected ? "rgba(37,99,235,0.25)" : "rgba(255,255,255,0.04)",
+                                                            borderColor: selected ? "rgba(37,99,235,0.55)" : "rgba(255,255,255,0.1)",
+                                                            color: selected ? "#60a5fa" : "rgba(255,255,255,0.5)",
+                                                            transition: "all 0.15s",
+                                                        }}
+                                                        onMouseEnter={e => { if (!selected) e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)"; }}
+                                                        onMouseLeave={e => { if (!selected) e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
+                                                    >
+                                                        {selected && <span style={{ marginRight: "4px" }}>✓</span>}{g}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {formData.genre && (
+                                            <p style={{ marginTop: "6px", fontSize: "0.72rem", color: "rgba(255,255,255,0.35)" }}>
+                                                Seleccionado: <span style={{ color: "#60a5fa" }}>{formData.genre}</span>
+                                            </p>
+                                        )}
                                     </div>
+
+                                    {/* AÑO */}
                                     <div>
                                         <label style={labelStyle}>Año de lanzamiento</label>
                                         <input type="number" value={formData.year} onChange={e => setFormData({ ...formData, year: parseInt(e.target.value) })} required style={inputStyle} />
                                     </div>
+                                    <div />
 
                                     {/* DESCRIPCIÓN */}
                                     <div style={{ gridColumn: "span 2" }}>
