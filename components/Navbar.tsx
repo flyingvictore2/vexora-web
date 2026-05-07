@@ -385,7 +385,7 @@ export default function Navbar() {
                                         </button>
 
                                         {/* Submenu items */}
-                                        {showSocial && (
+                                        {showSocial && sections.social !== "soon" && (
                                             <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', paddingBottom: '4px' }}>
                                                 {[
                                                     { icon: '👥', label: t("nav.friends"), href: '/social/friends' },
