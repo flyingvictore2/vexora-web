@@ -110,11 +110,27 @@ export async function GET() {
             ? rows.map(r => `${r.type}: ${r.count}`).join(" | ")
             : "⚠️ no movies in DB";
 
-        // Also list titles + types so we can spot wrong types
-        const titles = await prisma.$queryRawUnsafe<{ title: string; type: string }[]>(
-            `SELECT title, type FROM "movie" ORDER BY "createdAt" DESC LIMIT 20`
+        const now = new Date();
+        const titles = await prisma.$queryRawUnsafe<{ id: string; title: string; type: string; releaseDate: Date | null }[]>(
+            `SELECT id, title, type, "releaseDate" FROM "movie" ORDER BY "createdAt" DESC LIMIT 30`
         );
-        results.movies_sample = titles.map(t => `[${t.type}] ${t.title}`);
+        results.movies_detail = titles.map(t => {
+            const future = t.releaseDate && t.releaseDate > now;
+            return `[${t.type}${future ? " ⏰FUTURO" : ""}] ${t.title}`;
+        });
+
+        // Specifically call out anything that looks like a series but has wrong type
+        const wrongType = titles.filter(t => t.type !== "SERIE" && t.type !== "ANIME" && t.type !== "MOVIE" && t.type !== "DOCUMENTAL");
+        results.wrong_types = wrongType.length ? wrongType.map(t => `id=${t.id} type="${t.type}" title="${t.title}"`) : "✅ all types look valid";
+
+        // Direct fix helper: list SERIE items and whether they'd appear on home
+        const serieItems = titles.filter(t => t.type === "SERIE");
+        results.series_in_db = serieItems.length
+            ? serieItems.map(t => {
+                const future = t.releaseDate && t.releaseDate > now;
+                return `"${t.title}" → ${future ? "❌ OCULTA por releaseDate futura" : "✅ debería aparecer en inicio"}`;
+            })
+            : "❌ NINGUNA — Ningún contenido tiene type=SERIE en la BD";
     } catch (e: any) {
         results.movie_types = `❌ ${e.message}`;
     }
