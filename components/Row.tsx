@@ -95,12 +95,12 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                                     <iframe
                                         className="trailer-iframe"
                                         src={movie.trailerUrl}
+                                        allow="autoplay; encrypted-media"
                                         style={{
                                             position: "absolute", inset: 0,
                                             width: "100%", height: "100%",
-                                            border: "none", opacity: 0,
+                                            border: "none",
                                             pointerEvents: "none",
-                                            transition: "opacity 0.3s",
                                             zIndex: 5,
                                         }}
                                         loading="lazy"
