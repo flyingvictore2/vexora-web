@@ -129,9 +129,14 @@ export default function Navbar() {
     const navLink = (key: string, href: string, label: string) => {
         const s = sections[key];
         if (s === "hidden") return null;
+        if (s === "soon") return (
+            <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: "4px", opacity: 0.45, cursor: "not-allowed", fontSize: "inherit" }}>
+                {label}{prontoTag}
+            </span>
+        );
         return (
             <Link key={key} href={href} className={pathname === href ? styles.active : ''}>
-                {label}{s === "soon" && prontoTag}
+                {label}
             </Link>
         );
     };
@@ -168,9 +173,9 @@ export default function Navbar() {
                 <div className={styles.right}>
                     <div className={styles.iconSet}>
                         {sections.search !== "hidden" && (
-                            <Link href="/search" className={styles.iconBtn} style={{ position: "relative" }}>
-                                🔍{sections.search === "soon" && prontoTag}
-                            </Link>
+                            sections.search === "soon"
+                                ? <span className={styles.iconBtn} style={{ opacity: 0.45, cursor: "not-allowed" }}>🔍{prontoTag}</span>
+                                : <Link href="/search" className={styles.iconBtn}>🔍</Link>
                         )}
                         <button className={styles.iconBtn} onClick={toggleTheme}>
                             {isDark ? "🌙" : "☀️"}
@@ -352,7 +357,7 @@ export default function Navbar() {
                                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                         {/* Header — clickable to expand/collapse */}
                                         <button
-                                            onClick={() => setShowSocial(v => !v)}
+                                            onClick={() => sections.social !== "soon" && setShowSocial(v => !v)}
                                             style={{
                                                 width: '100%',
                                                 padding: '11px 20px',
@@ -361,7 +366,8 @@ export default function Navbar() {
                                                 justifyContent: 'space-between',
                                                 background: 'none',
                                                 border: 'none',
-                                                cursor: 'pointer',
+                                                cursor: sections.social === "soon" ? 'not-allowed' : 'pointer',
+                                                opacity: sections.social === "soon" ? 0.45 : 1,
                                             }}
                                         >
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
