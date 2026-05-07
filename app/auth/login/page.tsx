@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -28,7 +28,10 @@ export default function LoginPage() {
                 setError("Correo o contraseña incorrectos");
                 return;
             }
-            router.push("/profiles");
+            // Comprobar si el usuario necesita elegir un nombre de usuario
+            const session = await getSession();
+            const hasUsername = !!(session?.user as any)?.username;
+            router.push(hasUsername ? "/profiles" : "/auth/username");
         } catch {
             setError("Ha ocurrido un error. Inténtalo de nuevo.");
         } finally {
@@ -38,7 +41,8 @@ export default function LoginPage() {
 
     const handleGoogle = async () => {
         setGoogleLoading(true);
-        await signIn("google", { callbackUrl: "/profiles" });
+        // Redirigir a /auth/username: si ya tiene usuario la página redirige sola a /profiles
+        await signIn("google", { callbackUrl: "/auth/username" });
     };
 
     const inputBase: React.CSSProperties = {

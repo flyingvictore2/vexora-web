@@ -11,6 +11,9 @@ export async function ensureMigrations() {
     if (ran) return;
     ran = true;
     try {
+        await prisma.$executeRawUnsafe(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "username" TEXT`);
+        // Unique index — ignore if already exists
+        await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "user_username_key" ON "user"("username")`).catch(() => {});
         await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "trailerUrl" TEXT`);
         await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`);
 

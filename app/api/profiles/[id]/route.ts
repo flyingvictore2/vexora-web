@@ -49,17 +49,16 @@ export async function PATCH(
     if (!name?.trim()) return NextResponse.json({ error: "El nombre es obligatorio" }, { status: 400 });
 
     try {
-        const now = new Date().toISOString();
         await prisma.$executeRawUnsafe(
             `UPDATE "profile"
-             SET name=$1, pin=$2, "isKid"=$3::boolean, "avatarColor"=$4, "avatarEmoji"=$5, "updatedAt"=$6::timestamp
+             SET name=$1, pin=$2, "isKid"=$3, "avatarColor"=$4, "avatarEmoji"=$5, "updatedAt"=$6
              WHERE id=$7`,
             name.trim(),
             pin || null,
-            isKid ? "true" : "false",
+            isKid ?? false,              // native boolean — no ::boolean cast needed
             avatarColor || "#6366f1",
             avatarEmoji || "😎",
-            now,
+            new Date(),                  // native Date — no ::timestamp cast needed
             id
         );
         return NextResponse.json({

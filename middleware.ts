@@ -7,10 +7,18 @@ export default withAuth(
         const isAuth = !!token;
         const pathname = req.nextUrl.pathname;
         const isAuthPage = pathname.startsWith("/auth");
+        // /auth/username is only for authenticated users — never redirect them away from it
+        const isUsernamePage = pathname === "/auth/username";
 
-        // Authenticated users visiting /auth → go to /profiles
-        if (isAuthPage) {
+        if (isAuthPage && !isUsernamePage) {
+            // Login/register pages: send authenticated users to /profiles
             if (isAuth) return NextResponse.redirect(new URL("/profiles", req.url));
+            return NextResponse.next();
+        }
+
+        // /auth/username: unauthenticated users go to login, authenticated stay
+        if (isUsernamePage) {
+            if (!isAuth) return NextResponse.redirect(new URL("/auth/login", req.url));
             return NextResponse.next();
         }
 

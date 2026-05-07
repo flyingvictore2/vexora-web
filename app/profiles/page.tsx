@@ -122,7 +122,18 @@ export default function ProfilesPage() {
             const url = modalMode === "edit" ? `/api/profiles/${editProfile.id}` : "/api/profiles";
             const method = modalMode === "edit" ? "PATCH" : "POST";
             const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-            if (!res.ok) { const d = await res.json().catch(() => ({})); setFormError(d.error || "Error al guardar"); return; }
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                let msg = `[HTTP ${res.status}]`;
+                try {
+                    const d = JSON.parse(text);
+                    msg = d.error ? `[${res.status}] ${d.error}` : msg;
+                } catch {
+                    if (text.trim()) msg = `[${res.status}] ${text.trim().slice(0, 200)}`;
+                }
+                setFormError(msg);
+                return;
+            }
             setModalMode(null);
             await refetch();
         } catch { setFormError("Error de red"); }
@@ -318,7 +329,12 @@ export default function ProfilesPage() {
                                 <Toggle on={formIsKid} onToggle={() => setFormIsKid(!formIsKid)} color="#10b981" />
                             </div>
 
-                            {formError && <p style={{ fontSize: "13px", color: "#fca5a5", background: "rgba(239,68,68,0.08)", padding: "10px 14px", borderRadius: "8px", border: "1px solid rgba(239,68,68,0.2)" }}>{formError}</p>}
+                            {formError && (
+                                <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "10px 14px" }}>
+                                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#f87171", letterSpacing: "0.5px", marginBottom: "4px" }}>ERROR</p>
+                                    <p style={{ fontSize: "12px", color: "#fca5a5", wordBreak: "break-all", userSelect: "text", lineHeight: 1.5 }}>{formError}</p>
+                                </div>
+                            )}
 
                             <div style={{ display: "flex", gap: "12px", marginTop: "4px" }}>
                                 <button type="submit" disabled={saving} style={{ flex: 1, padding: "14px", background: `linear-gradient(135deg, ${INDIGO} 0%, #7c3aed 100%)`, border: "none", borderRadius: "10px", color: "white", fontSize: "14px", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, letterSpacing: "0.5px", fontFamily: "inherit", boxShadow: `0 4px 20px rgba(99,102,241,0.35)` }}>
