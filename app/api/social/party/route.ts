@@ -13,10 +13,15 @@ async function ensureTables() {
             "episodeId" TEXT,
             "currentTime" FLOAT DEFAULT 0,
             "isPlaying" BOOLEAN DEFAULT FALSE,
+            "stateAt" TIMESTAMP DEFAULT NOW(),
             "updatedAt" TIMESTAMP DEFAULT NOW(),
             "createdAt" TIMESTAMP DEFAULT NOW()
         )
     `).catch(() => {});
+    // Add stateAt column if upgrading from old schema
+    await prisma.$executeRawUnsafe(
+        `ALTER TABLE "WatchParty" ADD COLUMN IF NOT EXISTS "stateAt" TIMESTAMP DEFAULT NOW()`
+    ).catch(() => {});
     await prisma.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS "WatchPartyMember" (
             id TEXT PRIMARY KEY,
@@ -50,6 +55,7 @@ export async function GET(req: Request) {
 
     const parties = await prisma.$queryRawUnsafe<any[]>(`
         SELECT wp.*,
+            EXTRACT(EPOCH FROM wp."stateAt") * 1000 AS "stateAtMs",
             m.title AS "movieTitle", m."thumbnailUrl" AS "movieThumbnail",
             m."videoUrl" AS "movieVideoUrl",
             ep.title AS "episodeTitle", ep."videoUrl" AS "episodeVideoUrl",
@@ -79,7 +85,11 @@ export async function GET(req: Request) {
         LIMIT 100
     `, party.id);
 
-    return NextResponse.json({ party, members, messages });
+    // Server time for lag compensation
+    const serverNow = await prisma.$queryRawUnsafe<{ now: Date }[]>(`SELECT NOW() AS now`);
+    const serverMs = new Date(serverNow[0].now).getTime();
+
+    return NextResponse.json({ party, members, messages, serverMs });
 }
 
 // POST /api/social/party — create { profileId, movieId?, episodeId? }
@@ -95,11 +105,10 @@ export async function POST(req: Request) {
     const id = crypto.randomUUID();
 
     await prisma.$executeRawUnsafe(`
-        INSERT INTO "WatchParty" (id,code,"hostProfileId","movieId","episodeId","currentTime","isPlaying","createdAt","updatedAt")
-        VALUES ($1,$2,$3,$4,$5,0,false,NOW(),NOW())
+        INSERT INTO "WatchParty" (id,code,"hostProfileId","movieId","episodeId","currentTime","isPlaying","stateAt","createdAt","updatedAt")
+        VALUES ($1,$2,$3,$4,$5,0,false,NOW(),NOW(),NOW())
     `, id, code, profileId, movieId || null, episodeId || null);
 
-    // Host joins as member
     await prisma.$executeRawUnsafe(`
         INSERT INTO "WatchPartyMember" (id,"partyId","profileId","lastSeen","joinedAt")
         VALUES ($1,$2,$3,NOW(),NOW()) ON CONFLICT ("partyId","profileId") DO UPDATE SET "lastSeen"=NOW()
@@ -108,8 +117,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, code, id });
 }
 
-// PATCH /api/social/party — sync state or send chat message
+// PATCH /api/social/party
 // { code, profileId, currentTime?, isPlaying?, message? }
+// Only host can change currentTime/isPlaying
 export async function PATCH(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return new NextResponse("Unauthorized", { status: 401 });
@@ -122,16 +132,18 @@ export async function PATCH(req: Request) {
     if (!parties.length) return NextResponse.json({ error: "Sala no encontrada" }, { status: 404 });
     const party = parties[0];
 
-    // Heartbeat — keep member alive
+    // Heartbeat
     await prisma.$executeRawUnsafe(`
         INSERT INTO "WatchPartyMember" (id,"partyId","profileId","lastSeen","joinedAt")
         VALUES ($1,$2,$3,NOW(),NOW()) ON CONFLICT ("partyId","profileId") DO UPDATE SET "lastSeen"=NOW()
     `, crypto.randomUUID(), party.id, profileId);
 
-    // Only host updates playback state
-    if (party.hostProfileId === profileId && currentTime !== undefined) {
+    // ONLY host can update playback state — stateAt records exact server time for lag compensation
+    if (party.hostProfileId === profileId && currentTime !== undefined && currentTime !== null) {
         await prisma.$executeRawUnsafe(`
-            UPDATE "WatchParty" SET "currentTime"=$1,"isPlaying"=$2,"updatedAt"=NOW() WHERE id=$3
+            UPDATE "WatchParty"
+            SET "currentTime"=$1, "isPlaying"=$2, "stateAt"=NOW(), "updatedAt"=NOW()
+            WHERE id=$3
         `, currentTime, isPlaying ?? false, party.id);
     }
 
