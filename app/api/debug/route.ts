@@ -101,5 +101,23 @@ export async function GET() {
         results.profile_insert_test = `❌ ${e.message}`;
     }
 
+    // 7. Movie type distribution — helps diagnose missing rows on home page
+    try {
+        const rows = await prisma.$queryRawUnsafe<{ type: string; count: string }[]>(
+            `SELECT type, COUNT(*)::text AS count FROM "movie" GROUP BY type ORDER BY type`
+        );
+        results.movie_types = rows.length
+            ? rows.map(r => `${r.type}: ${r.count}`).join(" | ")
+            : "⚠️ no movies in DB";
+
+        // Also list titles + types so we can spot wrong types
+        const titles = await prisma.$queryRawUnsafe<{ title: string; type: string }[]>(
+            `SELECT title, type FROM "movie" ORDER BY "createdAt" DESC LIMIT 20`
+        );
+        results.movies_sample = titles.map(t => `[${t.type}] ${t.title}`);
+    } catch (e: any) {
+        results.movie_types = `❌ ${e.message}`;
+    }
+
     return NextResponse.json({ timestamp: new Date().toISOString(), ...results }, { status: 200 });
 }
