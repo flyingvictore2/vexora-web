@@ -206,9 +206,6 @@ export default function VideoPlayer({ src, title, onProgressUpdate }: VideoPlaye
                 <div className={styles.topBar}>
                     <button onClick={() => router.back()} className={styles.backBtn} style={{ background: "none", border: "none", cursor: "pointer" }}>← Volver</button>
                     <h2 className={styles.title}>{title}</h2>
-                    <button className={styles.shareBtn} onClick={copyWatchPartyLink} title="Watch Party">
-                        👥 Invitar a ver
-                    </button>
                 </div>
 
                 {!isEmbed && (
