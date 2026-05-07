@@ -345,19 +345,6 @@ export default function Navbar() {
                                             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span style={{ fontSize: '13px' }}>🌐</span>
                                                 <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>{t("nav.social")}</span>
-                                                <span style={{
-                                                    fontSize: '9px',
-                                                    fontWeight: '800',
-                                                    letterSpacing: '0.6px',
-                                                    textTransform: 'uppercase',
-                                                    padding: '2px 6px',
-                                                    borderRadius: '4px',
-                                                    background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(124,58,237,0.25))',
-                                                    border: '1px solid rgba(99,102,241,0.3)',
-                                                    color: '#a5b4fc',
-                                                }}>
-                                                    {t("nav.soon")}
-                                                </span>
                                             </span>
                                             <span style={{
                                                 fontSize: '10px',
@@ -372,27 +359,30 @@ export default function Navbar() {
                                         {showSocial && (
                                             <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', paddingBottom: '4px' }}>
                                                 {[
-                                                    { icon: '👥', label: t("nav.friends") },
-                                                    { icon: '💬', label: t("nav.chat") },
-                                                    { icon: '🎉', label: t("nav.watchparty") },
-                                                ].map((item: {icon: string; label: string}) => (
-                                                    <div
+                                                    { icon: '👥', label: t("nav.friends"), href: '/social/friends' },
+                                                    { icon: '💬', label: t("nav.chat"),    href: '/social/chat' },
+                                                    { icon: '🎉', label: t("nav.watchparty"), href: '/social/party' },
+                                                ].map((item) => (
+                                                    <a
                                                         key={item.label}
+                                                        href={item.href}
                                                         style={{
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'space-between',
                                                             padding: '9px 20px 9px 36px',
-                                                            opacity: 0.45,
-                                                            cursor: 'not-allowed',
+                                                            textDecoration: 'none',
+                                                            cursor: 'pointer',
+                                                            transition: 'background 0.15s',
                                                         }}
+                                                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                                                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                                                     >
                                                         <span style={{ fontSize: '13px', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                             <span>{item.icon}</span>
                                                             {item.label}
                                                         </span>
-                                                        <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: '700' }}>PRONTO</span>
-                                                    </div>
+                                                    </a>
                                                 ))}
                                             </div>
                                         )}
