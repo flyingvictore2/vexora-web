@@ -169,9 +169,6 @@ export default function Home() {
                 {continueWatching.length > 0 && (
                     <Row title={t("home.continue")} movies={continueWatching} progressMap={progressMap} />
                 )}
-                {watchAgain.length > 0 && (
-                    <Row title={t("home.watchagain")} movies={watchAgain} progressMap={progressMap} />
-                )}
 
                 <Row title={t("home.news")} movies={novedades} isLargeRow />
                 {peliculas.length > 0 && <Row title={t("home.movies")} movies={peliculas} />}
@@ -179,6 +176,11 @@ export default function Home() {
                 {anime.length > 0 && <Row title={t("home.anime")} movies={anime} />}
                 {recommendations.length > 0 && (
                     <Row title={t("home.recommended")} movies={recomendados} />
+                )}
+
+                {/* "Volver a ver" siempre al final */}
+                {watchAgain.length > 0 && (
+                    <Row title={t("home.watchagain")} movies={watchAgain} progressMap={progressMap} />
                 )}
             </div>
         </div>
