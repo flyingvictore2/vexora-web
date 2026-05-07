@@ -28,13 +28,19 @@ export default async function RootLayout({
 }>) {
     await ensureMigrations();
     const session = await getServerSession(authOptions);
-    const [maintenanceModeSetting, maintenanceTimeSetting] = await Promise.all([
-        prisma.setting.findUnique({ where: { key: "maintenanceMode" } }),
-        prisma.setting.findUnique({ where: { key: "maintenanceTime" } })
-    ]);
 
-    const isMaintenance = maintenanceModeSetting?.value === "true";
-    const maintenanceTime = maintenanceTimeSetting?.value || "30 MINUTOS";
+    const maintenanceSettings = await prisma.setting.findMany({
+        where: { key: { in: ["maintenanceTarget", "maintenanceTime", "maintenanceTitle", "maintenanceMessage", "maintenanceEmoji"] } }
+    });
+    const ms = Object.fromEntries(maintenanceSettings.map(s => [s.key, s.value]));
+
+    // maintenanceTarget: "false" = off | "NON_ADMINS" = users only | "ALL" = everyone
+    const maintenanceTarget = ms.maintenanceTarget || "false";
+    const maintenanceTime    = ms.maintenanceTime    || "30 MINUTOS";
+    const maintenanceTitle   = ms.maintenanceTitle   || "Próximamente";
+    const maintenanceMessage = ms.maintenanceMessage || "Estamos trabajando en algo increíble. Vuelve pronto.";
+    const maintenanceEmoji   = ms.maintenanceEmoji   || "🚀";
+
     const isAdmin = (session?.user as any)?.role === "ADMIN";
 
     const headerList = await headers();
@@ -45,12 +51,23 @@ export default async function RootLayout({
         pathname.startsWith("/auth/login") ||
         pathname.startsWith("/api/auth");
 
-    if (isMaintenance && !isAdmin && !isAllowedPath && !pathname.includes("/maintenance")) {
+    const shouldShowMaintenance =
+        !isAllowedPath &&
+        !pathname.includes("/maintenance") &&
+        (maintenanceTarget === "ALL" ||
+         (maintenanceTarget === "NON_ADMINS" && !isAdmin));
+
+    if (shouldShowMaintenance) {
         return (
             <html lang="es" suppressHydrationWarning>
                 <body className={inter.className}>
                     <Providers>
-                        <MaintenancePage time={maintenanceTime} />
+                        <MaintenancePage
+                            time={maintenanceTime}
+                            title={maintenanceTitle}
+                            message={maintenanceMessage}
+                            emoji={maintenanceEmoji}
+                        />
                     </Providers>
                 </body>
             </html>

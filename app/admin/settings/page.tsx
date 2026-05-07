@@ -7,8 +7,11 @@ export default function AdminSettings() {
         siteName: "Series.ly",
         contactEmail: "soporte@series.ly",
         allowNewRegistrations: true,
-        maintenanceMode: false,
+        maintenanceTarget: "false",
         maintenanceTime: "30 MINUTOS",
+        maintenanceTitle: "Próximamente",
+        maintenanceMessage: "Estamos trabajando en algo increíble. Vuelve pronto.",
+        maintenanceEmoji: "🚀",
         stripeEnabled: true,
         paypalEnabled: true,
     });
@@ -31,8 +34,11 @@ export default function AdminSettings() {
                     siteName: data.siteName || "Series.ly",
                     contactEmail: data.contactEmail || "soporte@series.ly",
                     allowNewRegistrations: data.allowNewRegistrations === "true",
-                    maintenanceMode: data.maintenanceMode === "true",
+                    maintenanceTarget: data.maintenanceTarget || "false",
                     maintenanceTime: data.maintenanceTime || "30 MINUTOS",
+                    maintenanceTitle: data.maintenanceTitle || "Próximamente",
+                    maintenanceMessage: data.maintenanceMessage || "Estamos trabajando en algo increíble. Vuelve pronto.",
+                    maintenanceEmoji: data.maintenanceEmoji || "🚀",
                     stripeEnabled: data.stripeEnabled !== "false",
                     paypalEnabled: data.paypalEnabled !== "false",
                 });
@@ -138,31 +144,91 @@ export default function AdminSettings() {
                             </button>
                         </div>
 
-                        <div style={toggleRowStyle}>
-                            <div>
-                                <div style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--error)" }}>Modo Mantenimiento</div>
-                                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Bloquear acceso público temporalmente.</div>
+                        <div>
+                            <div style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--error)", marginBottom: "6px" }}>Modo Mantenimiento</div>
+                            <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginBottom: "14px" }}>Muestra una pantalla de mantenimiento a los visitantes.</div>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                                {([
+                                    { value: "false",      label: "🟢 Desactivado",  desc: "Nadie ve mantenimiento" },
+                                    { value: "NON_ADMINS", label: "🟡 Solo usuarios", desc: "Admins ven el sitio normal" },
+                                    { value: "ALL",        label: "🔴 Todos",         desc: "Incluido admins" },
+                                ] as { value: string; label: string; desc: string }[]).map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setSettings(prev => ({ ...prev, maintenanceTarget: opt.value }))}
+                                        title={opt.desc}
+                                        style={{
+                                            flex: 1,
+                                            padding: "8px 6px",
+                                            borderRadius: "8px",
+                                            fontWeight: "800",
+                                            fontSize: "0.72rem",
+                                            cursor: "pointer",
+                                            border: settings.maintenanceTarget === opt.value
+                                                ? "1px solid rgba(99,102,241,0.6)"
+                                                : "1px solid rgba(255,255,255,0.1)",
+                                            background: settings.maintenanceTarget === opt.value
+                                                ? "rgba(99,102,241,0.2)"
+                                                : "rgba(255,255,255,0.04)",
+                                            color: settings.maintenanceTarget === opt.value ? "white" : "rgba(255,255,255,0.45)",
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => handleToggle("maintenanceMode")}
-                                style={settings.maintenanceMode ? toggleOnStyle : toggleOffStyle}
-                            >
-                                {settings.maintenanceMode ? "ACTIVO" : "INACTIVO"}
-                            </button>
                         </div>
 
-                        {settings.maintenanceMode && (
-                            <div style={{ marginTop: "10px", padding: "15px", backgroundColor: "rgba(239, 68, 68, 0.05)", borderRadius: "10px", border: "1px solid rgba(239, 68, 68, 0.1)" }}>
-                                <label style={labelStyle}>Tiempo Estimado</label>
-                                <input
-                                    type="text"
-                                    value={settings.maintenanceTime}
-                                    onChange={e => setSettings({ ...settings, maintenanceTime: e.target.value })}
-                                    placeholder="Ej: 30 MINUTOS o 1 HORA"
-                                    style={{ ...inputStyle, backgroundColor: "rgba(0,0,0,0.2)" }}
-                                />
-                                <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)", marginTop: "8px" }}>Este texto aparecerá en la pantalla de mantenimiento.</p>
+                        {settings.maintenanceTarget !== "false" && (
+                            <div style={{ padding: "16px", backgroundColor: "rgba(239,68,68,0.05)", borderRadius: "10px", border: "1px solid rgba(239,68,68,0.1)", display: "flex", flexDirection: "column", gap: "12px" }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "1fr 70px", gap: "10px" }}>
+                                    <div>
+                                        <label style={labelStyle}>Título</label>
+                                        <input
+                                            type="text"
+                                            value={settings.maintenanceTitle}
+                                            onChange={e => setSettings({ ...settings, maintenanceTitle: e.target.value })}
+                                            placeholder="Próximamente"
+                                            style={{ ...inputStyle, backgroundColor: "rgba(0,0,0,0.2)" }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={labelStyle}>Emoji</label>
+                                        <input
+                                            type="text"
+                                            value={settings.maintenanceEmoji}
+                                            onChange={e => setSettings({ ...settings, maintenanceEmoji: e.target.value })}
+                                            placeholder="🚀"
+                                            style={{ ...inputStyle, backgroundColor: "rgba(0,0,0,0.2)", textAlign: "center", fontSize: "1.4rem", padding: "8px" }}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Mensaje</label>
+                                    <input
+                                        type="text"
+                                        value={settings.maintenanceMessage}
+                                        onChange={e => setSettings({ ...settings, maintenanceMessage: e.target.value })}
+                                        placeholder="Estamos trabajando en algo increíble..."
+                                        style={{ ...inputStyle, backgroundColor: "rgba(0,0,0,0.2)" }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Tiempo Estimado</label>
+                                    <input
+                                        type="text"
+                                        value={settings.maintenanceTime}
+                                        onChange={e => setSettings({ ...settings, maintenanceTime: e.target.value })}
+                                        placeholder="Ej: 30 MINUTOS o 1 HORA"
+                                        style={{ ...inputStyle, backgroundColor: "rgba(0,0,0,0.2)" }}
+                                    />
+                                </div>
+                                <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)", margin: 0 }}>
+                                    {settings.maintenanceTarget === "ALL"
+                                        ? "⚠️ Todos (incluidos admins) verán esta pantalla. Accede al panel por /admin para desactivarlo."
+                                        : "ℹ️ Solo los usuarios sin rol admin verán esta pantalla."}
+                                </p>
                             </div>
                         )}
                     </div>
