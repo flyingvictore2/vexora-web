@@ -135,5 +135,37 @@ export async function GET() {
         results.movie_types = `❌ ${e.message}`;
     }
 
+    // 8. HiddenItem check — shows what each profile has personally hidden
+    try {
+        const hiddenItems = await prisma.$queryRawUnsafe<{ profileId: string; movieId: string; title: string }[]>(`
+            SELECT h."profileId", h."movieId", m.title
+            FROM "HiddenItem" h
+            LEFT JOIN movie m ON m.id = h."movieId"
+            ORDER BY h."profileId"
+        `);
+        results.hidden_items = hiddenItems.length
+            ? hiddenItems.map(h => `profile=${h.profileId} → "${h.title ?? h.movieId}"`)
+            : "✅ ningún item ocultado personalmente";
+    } catch (e: any) {
+        results.hidden_items = `❌ ${e.message}`;
+    }
+
+    // 9. Series visibility check — confirms what the API actually returns for admin
+    try {
+        const series = await prisma.$queryRawUnsafe<{ id: string; title: string; hidden: boolean; hiddenFor: string | null; releaseDate: Date | null }[]>(`
+            SELECT id, title, hidden, "hiddenFor", "releaseDate" FROM movie WHERE type = 'SERIE'
+        `);
+        results.series_visibility = series.length
+            ? series.map(s => {
+                const visibleAdmin = !s.hidden || s.hiddenFor === 'users';
+                const visibleUser = !s.hidden;
+                const future = s.releaseDate && s.releaseDate > new Date();
+                return `"${s.title}" hidden=${s.hidden} hiddenFor=${s.hiddenFor} → admin=${visibleAdmin && !future ? "✅" : "❌"} user=${visibleUser && !future ? "✅" : "❌"}`;
+            })
+            : "❌ no hay series en la BD";
+    } catch (e: any) {
+        results.series_visibility = `❌ ${e.message}`;
+    }
+
     return NextResponse.json({ timestamp: new Date().toISOString(), ...results }, { status: 200 });
 }

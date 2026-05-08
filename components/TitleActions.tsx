@@ -1,10 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 export default function TitleActions({ movieId }: { movieId: string }) {
     const [busy, setBusy] = useState(false);
     const [msg, setMsg] = useState("");
+    const [isHidden, setIsHidden] = useState(false);
+
+    useEffect(() => {
+        const profileId = localStorage.getItem("selectedProfileId");
+        if (!profileId) return;
+        fetch(`/api/hidden?profileId=${profileId}`)
+            .then(r => r.json())
+            .then((ids: string[]) => setIsHidden(Array.isArray(ids) && ids.includes(movieId)))
+            .catch(() => {});
+    }, [movieId]);
 
     const flash = (m: string) => {
         setMsg(m);
@@ -24,16 +34,18 @@ export default function TitleActions({ movieId }: { movieId: string }) {
         setBusy(false);
     };
 
-    const hide = async () => {
+    const toggleHidden = async () => {
         const profileId = localStorage.getItem("selectedProfileId");
         if (!profileId || busy) return;
         setBusy(true);
+        const next = !isHidden;
         await fetch("/api/hidden", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ profileId, movieId, hidden: true }),
+            body: JSON.stringify({ profileId, movieId, hidden: next }),
         });
-        flash("Ocultado del inicio");
+        setIsHidden(next);
+        flash(next ? "Ocultado del inicio" : "Visible en el inicio ✓");
         setBusy(false);
     };
 
@@ -48,7 +60,18 @@ export default function TitleActions({ movieId }: { movieId: string }) {
     return (
         <>
             <button onClick={markWatched} disabled={busy} style={btnStyle}>✓ Marcar visto</button>
-            <button onClick={hide} disabled={busy} style={btnStyle}>🙈 No me interesa</button>
+            <button
+                onClick={toggleHidden}
+                disabled={busy}
+                style={{
+                    ...btnStyle,
+                    background: isHidden ? "rgba(52,211,153,0.1)" : "rgba(255,255,255,0.06)",
+                    borderColor: isHidden ? "rgba(52,211,153,0.3)" : "rgba(255,255,255,0.1)",
+                    color: isHidden ? "#34d399" : "white",
+                }}
+            >
+                {isHidden ? "👁️ Mostrar en inicio" : "🙈 No me interesa"}
+            </button>
             {msg && <span style={{ fontSize: "0.78rem", color: "#34d399", fontWeight: "700" }}>{msg}</span>}
         </>
     );
