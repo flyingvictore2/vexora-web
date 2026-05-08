@@ -28,6 +28,22 @@ interface RowProps {
 function trailerSrc(url: string): string {
     try {
         const u = new URL(url);
+        let videoId: string | null = null;
+
+        if (u.hostname === "youtu.be") {
+            videoId = u.pathname.slice(1);
+        } else if (u.hostname.includes("youtube.com")) {
+            if (u.pathname.startsWith("/embed/")) {
+                videoId = u.pathname.split("/embed/")[1]?.split("/")[0] ?? null;
+            } else {
+                videoId = u.searchParams.get("v");
+            }
+        }
+
+        if (videoId) {
+            return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&playsinline=1`;
+        }
+
         u.searchParams.set("autoplay", "1");
         u.searchParams.set("mute", "1");
         u.searchParams.set("controls", "0");

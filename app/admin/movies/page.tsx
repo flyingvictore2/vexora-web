@@ -718,15 +718,15 @@ export default function AdminMovies() {
                                         <input placeholder="https://..." value={formData.videoUrl} onChange={e => setFormData({ ...formData, videoUrl: e.target.value })} required style={inputStyle} />
                                     </div>
                                     <div style={{ gridColumn: "span 2" }}>
-                                        <label style={labelStyle}>URL del Tráiler (opcional) — YouTube embed</label>
+                                        <label style={labelStyle}>URL del Tráiler (opcional)</label>
                                         <input
-                                            placeholder="https://www.youtube.com/embed/VIDEO_ID?autoplay=1&mute=1"
+                                            placeholder="https://youtube.com/watch?v=VIDEO_ID  o  https://youtu.be/VIDEO_ID"
                                             value={(formData as any).trailerUrl || ""}
                                             onChange={e => setFormData({ ...formData, trailerUrl: e.target.value } as any)}
                                             style={inputStyle}
                                         />
                                         <p style={{ fontSize: "0.7rem", color: "var(--text-secondary)", marginTop: "5px" }}>
-                                            Se reproduce automáticamente al pasar el cursor sobre la miniatura en las filas de inicio.
+                                            Acepta cualquier URL de YouTube (normal, corta o embed). Se reproduce al pasar el cursor.
                                         </p>
                                     </div>
 
