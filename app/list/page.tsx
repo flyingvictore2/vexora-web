@@ -2,484 +2,195 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import AddToListButton from "@/components/AddToListButton";
 
 interface MovieItem {
-    id: string;
-    title: string;
-    thumbnailUrl: string;
-    genre: string;
-    rating: string;
-    year: number;
-    type: string;
+    id: string; title: string; thumbnailUrl: string;
+    genre: string; rating: string; year: number; type: string;
 }
-
-interface UserListItem {
-    movieId: string;
-    movie: MovieItem;
-}
-
 interface UserList {
-    id: string;
-    name: string;
-    items: UserListItem[];
+    id: string; name: string;
+    items: { movieId: string; movie: MovieItem }[];
     createdAt: string;
 }
 
-function MovieCard({ movie }: { movie: MovieItem }) {
-    const href = `/title/${movie.id}`;
+// ── Thumbnail collage ─────────────────────────────────────────────────────────
+function Collage({ items }: { items: UserList["items"] }) {
+    const thumbs = items.slice(0, 5).map(i => i.movie?.thumbnailUrl).filter(Boolean);
+    if (thumbs.length === 0) return (
+        <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg,#1e2a40,#0f172a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.8rem" }}>
+            📋
+        </div>
+    );
     return (
-        <div style={{
-            borderRadius: "10px", overflow: "hidden", backgroundColor: "#111",
-            position: "relative", flexShrink: 0, width: "160px",
-        }}>
-            <Link href={href} style={{ display: "block", textDecoration: "none" }}>
-                <div style={{ position: "relative", aspectRatio: "2/3", overflow: "hidden" }}>
-                    <img
-                        src={movie.thumbnailUrl}
-                        alt={movie.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.3s" }}
-                        onMouseOver={e => (e.currentTarget.style.transform = "scale(1.05)")}
-                        onMouseOut={e => (e.currentTarget.style.transform = "scale(1)")}
-                    />
-                    <div style={{
-                        position: "absolute", inset: 0,
-                        background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)",
-                        pointerEvents: "none",
-                    }} />
-                    {movie.rating && (
-                        <div style={{
-                            position: "absolute", top: "7px", left: "7px",
-                            backgroundColor: "rgba(0,0,0,0.7)", borderRadius: "5px",
-                            padding: "2px 7px", fontSize: "0.7rem", fontWeight: "700", color: "#fbbf24",
-                        }}>
-                            ★ {movie.rating}
-                        </div>
-                    )}
-                </div>
-                <div style={{ padding: "8px 8px 4px" }}>
-                    <p style={{
-                        color: "white", fontWeight: "700", fontSize: "0.82rem", margin: 0,
-                        lineHeight: "1.3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                    }}>
-                        {movie.title}
-                    </p>
-                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.72rem", margin: "3px 0 0" }}>
-                        {movie.year} · {movie.genre}
-                    </p>
-                </div>
-            </Link>
-            <div style={{ padding: "4px 8px 8px", display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                <AddToListButton movieId={movie.id} minimal />
-            </div>
+        <div style={{ display: "flex", height: "100%", gap: "2px", overflow: "hidden" }}>
+            {thumbs.map((t, i) => (
+                <img key={i} src={t} alt="" style={{ flex: `0 0 ${100 / thumbs.length}%`, height: "100%", objectFit: "cover", objectPosition: "center top" }} />
+            ))}
         </div>
     );
 }
 
-// ── Share modal ──────────────────────────────────────────────────────────────
-function ShareListModal({ list, onClose }: { list: UserList; onClose: () => void }) {
-    const [friends, setFriends] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [sent, setSent] = useState<Record<string, boolean>>({});
+// ── Create list modal ─────────────────────────────────────────────────────────
+function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string) => Promise<void> }) {
+    const [name, setName] = useState("");
+    const [creating, setCreating] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetch("/api/social/friends")
-            .then(r => r.json())
-            .then(d => setFriends(d.friends || []))
-            .catch(() => {})
-            .finally(() => setLoading(false));
-    }, []);
-
-    const share = async (friend: any) => {
-        const url = `${window.location.origin}/list/shared/${list.id}`;
-        const content = `📋 Te compartí mi lista **${list.name}**: ${url}`;
-        await fetch("/api/social/messages", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ toUserId: friend.userId, content }),
-        });
-        setSent(prev => ({ ...prev, [friend.userId]: true }));
+    const submit = async () => {
+        if (!name.trim()) return;
+        setCreating(true); setErr(null);
+        try { await onCreate(name.trim()); onClose(); }
+        catch (e: any) { setErr(e.message || "Error al crear"); }
+        finally { setCreating(false); }
     };
 
     return (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}
             onClick={onClose}>
-            <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "28px", width: "100%", maxWidth: "420px", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}
+            <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "32px", width: "100%", maxWidth: "400px" }}
                 onClick={e => e.stopPropagation()}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-                    <div>
-                        <h2 style={{ color: "white", fontWeight: "900", fontSize: "1.1rem", margin: 0 }}>Compartir lista</h2>
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.82rem", marginTop: "4px" }}>📋 {list.name}</p>
-                    </div>
-                    <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "1.3rem", cursor: "pointer", lineHeight: 1 }}>✕</button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
+                    <h2 style={{ color: "white", fontWeight: "900", fontSize: "1.2rem", margin: 0 }}>Nueva lista</h2>
+                    <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "1.3rem", cursor: "pointer" }}>✕</button>
                 </div>
-
-                <div style={{ overflowY: "auto", flex: 1 }}>
-                    {loading ? (
-                        <p style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", padding: "2rem 0" }}>Cargando amigos...</p>
-                    ) : friends.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "2rem 0" }}>
-                            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.88rem" }}>No tienes amigos aún.</p>
-                            <a href="/social/friends" style={{ color: "#6366f1", fontSize: "0.82rem", fontWeight: "700" }}>Añadir amigos →</a>
-                        </div>
-                    ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                            {friends.map(f => (
-                                <div key={f.userId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.07)" }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "0.9rem", color: "white", flexShrink: 0 }}>
-                                            {(f.name || f.username || f.email)?.[0]?.toUpperCase() || "?"}
-                                        </div>
-                                        <span style={{ color: "white", fontWeight: "600", fontSize: "0.88rem" }}>
-                                            {f.name || f.username || f.email}
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={() => !sent[f.userId] && share(f)}
-                                        style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "800", cursor: sent[f.userId] ? "default" : "pointer", border: "none", background: sent[f.userId] ? "rgba(16,185,129,0.15)" : "#6366f1", color: sent[f.userId] ? "#10b981" : "white", transition: "all 0.2s" }}
-                                    >
-                                        {sent[f.userId] ? "✓ Enviado" : "Enviar"}
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <input
+                    autoFocus
+                    value={name}
+                    onChange={e => { setName(e.target.value); setErr(null); }}
+                    onKeyDown={e => e.key === "Enter" && submit()}
+                    placeholder="Nombre de la lista..."
+                    style={{ width: "100%", padding: "12px 16px", borderRadius: "10px", fontSize: "0.95rem", background: "rgba(255,255,255,0.07)", border: err ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(255,255,255,0.12)", color: "white", outline: "none", marginBottom: "12px", boxSizing: "border-box" }}
+                />
+                {err && <p style={{ color: "#f87171", fontSize: "0.82rem", margin: "0 0 12px" }}>⚠️ {err}</p>}
+                <button onClick={submit} disabled={!name.trim() || creating}
+                    style={{ width: "100%", padding: "12px", borderRadius: "10px", fontWeight: "800", fontSize: "0.95rem", background: name.trim() ? "#6366f1" : "rgba(255,255,255,0.06)", color: name.trim() ? "white" : "rgba(255,255,255,0.3)", border: "none", cursor: name.trim() ? "pointer" : "not-allowed", opacity: creating ? 0.7 : 1 }}>
+                    {creating ? "Creando..." : "Crear lista"}
+                </button>
             </div>
         </div>
     );
 }
 
-// ── List section ──────────────────────────────────────────────────────────────
-function UserListSection({
-    list,
-    onDelete,
-    onMovieRemoved,
-    canShare,
-}: {
-    list: UserList;
-    onDelete: (id: string) => void;
-    onMovieRemoved: (listId: string, movieId: string) => void;
-    canShare?: boolean;
-}) {
-    const [deleting, setDeleting] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
-    const [sharing, setSharing] = useState(false);
-
-    const handleDelete = async () => {
-        if (!confirmDelete) { setConfirmDelete(true); return; }
-        setDeleting(true);
-        try {
-            await fetch(`/api/lists/${list.id}`, { method: "DELETE" });
-            onDelete(list.id);
-        } finally {
-            setDeleting(false);
-        }
-    };
-
-    const handleRemoveMovie = async (movieId: string) => {
-        await fetch(`/api/lists/${list.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ movieId }),
-        });
-        onMovieRemoved(list.id, movieId);
-    };
-
-    return (
-        <div style={{ marginBottom: "3rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                <h2 style={{ color: "white", fontSize: "1.3rem", fontWeight: "800", margin: 0 }}>
-                    📋 {list.name}
-                </h2>
-                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.8rem" }}>
-                    {list.items.length} {list.items.length === 1 ? "título" : "títulos"}
-                </span>
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-                    {canShare && (
-                        <button
-                            onClick={() => setSharing(true)}
-                            style={{ padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700", backgroundColor: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8", cursor: "pointer" }}
-                        >
-                            🔗 Compartir
-                        </button>
-                    )}
-                    {confirmDelete && (
-                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}>¿Seguro?</span>
-                    )}
-                    <button
-                        onClick={handleDelete}
-                        disabled={deleting}
-                        style={{
-                            padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700",
-                            backgroundColor: confirmDelete ? "rgba(229,9,20,0.15)" : "rgba(255,255,255,0.05)",
-                            border: confirmDelete ? "1px solid rgba(229,9,20,0.3)" : "1px solid rgba(255,255,255,0.08)",
-                            color: confirmDelete ? "#ef4444" : "rgba(255,255,255,0.4)",
-                            cursor: "pointer", transition: "all 0.15s", opacity: deleting ? 0.5 : 1,
-                        }}
-                        onMouseLeave={() => setConfirmDelete(false)}
-                    >
-                        {deleting ? "..." : confirmDelete ? "Confirmar" : "Eliminar lista"}
-                    </button>
-                </div>
-                {sharing && <ShareListModal list={list} onClose={() => setSharing(false)} />}
-            </div>
-
-            {list.items.length === 0 ? (
-                <div style={{
-                    padding: "2rem", borderRadius: "10px", border: "1px dashed rgba(255,255,255,0.1)",
-                    textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: "0.85rem",
-                }}>
-                    Esta lista está vacía. Añade contenido desde cualquier título.
-                </div>
-            ) : (
-                <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
-                    {list.items.map(item => (
-                        <div key={item.movieId} style={{ position: "relative" }}>
-                            <MovieCard movie={item.movie} />
-                            <button
-                                onClick={() => handleRemoveMovie(item.movieId)}
-                                title="Quitar de esta lista"
-                                style={{
-                                    position: "absolute", top: "6px", right: "6px",
-                                    width: "24px", height: "24px", borderRadius: "50%",
-                                    backgroundColor: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.2)",
-                                    color: "rgba(255,255,255,0.7)", fontSize: "12px", cursor: "pointer",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    lineHeight: 1, fontWeight: "700",
-                                }}
-                                onMouseOver={e => { e.currentTarget.style.backgroundColor = "rgba(229,9,20,0.7)"; e.currentTarget.style.color = "white"; }}
-                                onMouseOut={e => { e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.7)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function MyListsPage() {
-    const [userLists, setUserLists] = useState<UserList[]>([]);
-    const [myList, setMyList] = useState<MovieItem[]>([]);
+    const [lists, setLists] = useState<UserList[]>([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [profileId, setProfileId] = useState<string | null>(null);
-    const [newListName, setNewListName] = useState("");
-    const [creating, setCreating] = useState(false);
-    const [createError, setCreateError] = useState<string | null>(null);
-    const [loadError, setLoadError] = useState<string | null>(null);
-    const [socialVisible, setSocialVisible] = useState(false);
-
-    const fetchLists = async (pid: string, silent = false) => {
-        if (!silent) setRefreshing(true);
-        try {
-            const res = await fetch(`/api/lists?profileId=${pid}`);
-            const data = await res.json();
-            if (data?.error) {
-                setLoadError(data.error);
-            } else {
-                setUserLists(Array.isArray(data) ? data : []);
-                setLoadError(null);
-            }
-        } catch {
-            setLoadError("Error de red al cargar listas");
-        } finally {
-            if (!silent) setRefreshing(false);
-        }
-    };
+    const [search, setSearch] = useState("");
+    const [showCreate, setShowCreate] = useState(false);
+    const [deleting, setDeleting] = useState<string | null>(null);
+    const [confirmDel, setConfirmDel] = useState<string | null>(null);
 
     useEffect(() => {
         const pid = localStorage.getItem("selectedProfileId");
         setProfileId(pid);
         if (!pid) { setLoading(false); return; }
-
-        Promise.all([
-            fetchLists(pid, true),
-            fetch(`/api/mylist?profileId=${pid}`).then(r => r.json()).catch(() => []),
-            fetch("/api/config").then(r => r.json()).catch(() => ({})),
-        ]).then(([, mylist, cfg]) => {
-            setMyList(Array.isArray(mylist) ? mylist : []);
-            setSocialVisible(cfg?.sections?.social === "visible");
-        }).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetch(`/api/lists?profileId=${pid}`)
+            .then(r => r.json())
+            .then(d => setLists(Array.isArray(d) ? d : []))
+            .catch(() => {})
+            .finally(() => setLoading(false));
     }, []);
 
-    const createList = async () => {
-        const name = newListName.trim();
-        if (!name) return;
-
-        if (!profileId) {
-            setCreateError("No hay perfil seleccionado. Vuelve a la pantalla de perfiles.");
-            return;
-        }
-
-        setCreating(true);
-        setCreateError(null);
-
-        try {
-            const res = await fetch("/api/lists", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ profileId, name }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok || data?.error) {
-                setCreateError(data?.error || `Error ${res.status}: no se pudo crear la lista`);
-                return;
-            }
-
-            setNewListName("");
-            // Recargar listas del servidor para obtener el estado actualizado
-            await fetchLists(profileId);
-        } catch (err) {
-            setCreateError("Error de red. Comprueba tu conexión e inténtalo de nuevo.");
-            console.error("createList error:", err);
-        } finally {
-            setCreating(false);
-        }
+    const createList = async (name: string) => {
+        if (!profileId) throw new Error("No hay perfil activo");
+        const res = await fetch("/api/lists", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profileId, name }),
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || "Error");
+        // reload
+        const updated = await fetch(`/api/lists?profileId=${profileId}`).then(r => r.json());
+        setLists(Array.isArray(updated) ? updated : []);
     };
 
-    const handleDeleteList = (id: string) => {
-        setUserLists(prev => prev.filter(l => l.id !== id));
+    const deleteList = async (id: string) => {
+        if (confirmDel !== id) { setConfirmDel(id); return; }
+        setDeleting(id); setConfirmDel(null);
+        await fetch(`/api/lists/${id}`, { method: "DELETE" });
+        setLists(prev => prev.filter(l => l.id !== id));
+        setDeleting(null);
     };
 
-    const handleMovieRemoved = (listId: string, movieId: string) => {
-        setUserLists(prev => prev.map(l => l.id === listId
-            ? { ...l, items: l.items.filter(i => i.movieId !== movieId) }
-            : l
-        ));
-    };
+    const filtered = lists.filter(l => l.name.toLowerCase().includes(search.toLowerCase()));
 
-    if (loading) {
-        return (
-            <div style={{ color: "white", padding: "8rem", textAlign: "center", fontSize: "1rem" }}>
-                Cargando tus listas...
-            </div>
-        );
-    }
+    if (loading) return (
+        <div style={{ padding: "8rem", textAlign: "center", color: "rgba(255,255,255,0.4)" }}>Cargando listas...</div>
+    );
 
     return (
         <div style={{ padding: "2rem 4% 4rem" }}>
-            {/* Header */}
-            <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "900", margin: "0 0 1.5rem" }}>📋 Mis Listas</h1>
+            {showCreate && <CreateModal onClose={() => setShowCreate(false)} onCreate={createList} />}
 
-            {/* Create new list — prominent card */}
-            <div style={{
-                display: "flex", gap: "10px", alignItems: "center",
-                padding: "18px 20px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "14px",
-                marginBottom: "2.5rem",
-            }}>
-                <span style={{ fontSize: "1.3rem" }}>➕</span>
-                <input
-                    value={newListName}
-                    onChange={e => { setNewListName(e.target.value); setCreateError(null); }}
-                    onKeyDown={e => e.key === "Enter" && createList()}
-                    placeholder="Nombre de la nueva lista..."
-                    style={{
-                        flex: 1, padding: "11px 16px", borderRadius: "10px", fontSize: "0.95rem",
-                        backgroundColor: "rgba(255,255,255,0.07)",
-                        border: createError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(255,255,255,0.12)",
-                        color: "white", outline: "none",
-                    }}
-                />
-                <button
-                    onClick={createList}
-                    disabled={!newListName.trim() || creating}
-                    style={{
-                        padding: "11px 24px", borderRadius: "10px", fontWeight: "800",
-                        backgroundColor: newListName.trim() && !creating ? "#6366f1" : "rgba(255,255,255,0.05)",
-                        border: "none", color: newListName.trim() ? "white" : "rgba(255,255,255,0.3)",
-                        cursor: newListName.trim() && !creating ? "pointer" : "not-allowed",
-                        fontSize: "0.9rem", transition: "all 0.2s",
-                        opacity: creating ? 0.6 : 1, whiteSpace: "nowrap",
-                    }}
-                >
-                    {creating ? "Creando..." : "Crear lista"}
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "2rem", flexWrap: "wrap" }}>
+                <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "900", margin: 0 }}>Mis Listas</h1>
+                <div style={{ flex: 1, minWidth: "180px" }}>
+                    <input
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Buscar lista..."
+                        style={{ width: "100%", padding: "9px 14px", borderRadius: "10px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "white", outline: "none", fontSize: "0.88rem", boxSizing: "border-box" }}
+                    />
+                </div>
+                <button onClick={() => setShowCreate(true)}
+                    style={{ padding: "10px 22px", borderRadius: "10px", background: "#6366f1", border: "none", color: "white", fontWeight: "800", fontSize: "0.88rem", cursor: "pointer", whiteSpace: "nowrap" }}>
+                    + Crear lista
                 </button>
             </div>
 
-            {/* Error / no-profile messages */}
-            {!profileId && (
-                <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
-                    ⚠️ No hay perfil activo.{" "}
-                    <Link href="/profiles" style={{ color: "#60a5fa", textDecoration: "underline" }}>
-                        Selecciona un perfil
-                    </Link>
-                    {" "}para gestionar tus listas.
-                </p>
-            )}
-            {createError && (
-                <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
-                    ⚠️ {createError}
-                </p>
-            )}
-            {loadError && (
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem" }}>
-                    <p style={{ color: "#f87171", fontSize: "0.85rem", margin: 0 }}>
-                        ⚠️ Error al cargar listas: {loadError}
-                    </p>
-                    {profileId && (
-                        <button
-                            onClick={() => fetchLists(profileId)}
-                            disabled={refreshing}
-                            style={{
-                                padding: "5px 12px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: "700",
-                                backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-                                color: "white", cursor: "pointer", opacity: refreshing ? 0.5 : 1,
-                            }}
-                        >
-                            {refreshing ? "Cargando..." : "↺ Reintentar"}
+            {/* Grid */}
+            {filtered.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "5rem 0", color: "rgba(255,255,255,0.3)" }}>
+                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📋</div>
+                    <h2 style={{ color: "white", marginBottom: "0.5rem" }}>
+                        {search ? "No se encontraron listas" : "Aún no tienes listas"}
+                    </h2>
+                    {!search && (
+                        <button onClick={() => setShowCreate(true)}
+                            style={{ marginTop: "1rem", padding: "10px 24px", borderRadius: "10px", background: "#6366f1", border: "none", color: "white", fontWeight: "800", cursor: "pointer" }}>
+                            Crear mi primera lista
                         </button>
                     )}
                 </div>
-            )}
-
-            {/* Custom user lists */}
-            {userLists.length === 0 && myList.length === 0 && !loadError ? (
-                <div style={{ textAlign: "center", padding: "5rem 0", color: "rgba(255,255,255,0.35)" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📋</div>
-                    <h2 style={{ color: "white", marginBottom: "0.5rem" }}>Aún no tienes listas</h2>
-                    <p>Crea tu primera lista arriba y añade películas, series o anime desde sus páginas.</p>
-                </div>
             ) : (
-                <>
-                    {userLists.map(list => (
-                        <UserListSection
-                            key={list.id}
-                            list={list}
-                            onDelete={handleDeleteList}
-                            onMovieRemoved={handleMovieRemoved}
-                            canShare={socialVisible}
-                        />
-                    ))}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+                    {filtered.map(list => (
+                        <div key={list.id} style={{ borderRadius: "14px", overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", transition: "transform 0.2s, border-color 0.2s" }}
+                            onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.4)"; }}
+                            onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)"; }}>
 
-                    {/* Old quick-add list */}
-                    {myList.length > 0 && (
-                        <div style={{ marginBottom: "3rem" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                                <h2 style={{ color: "white", fontSize: "1.3rem", fontWeight: "800", margin: 0 }}>
-                                    ❤️ Mi Lista Rápida
-                                </h2>
-                                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.8rem" }}>
-                                    {myList.length} {myList.length === 1 ? "título" : "títulos"}
-                                </span>
-                            </div>
-                            <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
-                                {myList.map(movie => (
-                                    <MovieCard key={movie.id} movie={movie} />
-                                ))}
+                            {/* Cover */}
+                            <Link href={`/list/${list.id}`} style={{ display: "block", aspectRatio: "16/9", overflow: "hidden", textDecoration: "none" }}>
+                                <Collage items={list.items} />
+                            </Link>
+
+                            {/* Info */}
+                            <div style={{ padding: "14px 16px" }}>
+                                <Link href={`/list/${list.id}`} style={{ textDecoration: "none" }}>
+                                    <h3 style={{ color: "white", fontWeight: "800", fontSize: "1rem", margin: "0 0 4px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{list.name}</h3>
+                                </Link>
+                                <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.78rem", margin: 0 }}>
+                                    {list.items.length} {list.items.length === 1 ? "título" : "títulos"}
+                                </p>
+                                <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
+                                    <Link href={`/list/${list.id}`}
+                                        style={{ padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700", background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8", textDecoration: "none" }}>
+                                        Abrir
+                                    </Link>
+                                    <button
+                                        onClick={() => deleteList(list.id)}
+                                        disabled={deleting === list.id}
+                                        onMouseLeave={() => confirmDel === list.id && setConfirmDel(null)}
+                                        style={{ padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700", background: confirmDel === list.id ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)", border: confirmDel === list.id ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.08)", color: confirmDel === list.id ? "#f87171" : "rgba(255,255,255,0.35)", cursor: "pointer", opacity: deleting === list.id ? 0.5 : 1 }}>
+                                        {deleting === list.id ? "..." : confirmDel === list.id ? "¿Seguro?" : "🗑️"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    )}
-                </>
+                    ))}
+                </div>
             )}
         </div>
     );
