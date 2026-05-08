@@ -155,10 +155,12 @@ function UserListSection({
     list,
     onDelete,
     onMovieRemoved,
+    canShare,
 }: {
     list: UserList;
     onDelete: (id: string) => void;
     onMovieRemoved: (listId: string, movieId: string) => void;
+    canShare?: boolean;
 }) {
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -194,12 +196,14 @@ function UserListSection({
                     {list.items.length} {list.items.length === 1 ? "título" : "títulos"}
                 </span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <button
-                        onClick={() => setSharing(true)}
-                        style={{ padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700", backgroundColor: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8", cursor: "pointer" }}
-                    >
-                        🔗 Compartir
-                    </button>
+                    {canShare && (
+                        <button
+                            onClick={() => setSharing(true)}
+                            style={{ padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700", backgroundColor: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8", cursor: "pointer" }}
+                        >
+                            🔗 Compartir
+                        </button>
+                    )}
                     {confirmDelete && (
                         <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}>¿Seguro?</span>
                     )}
@@ -267,6 +271,7 @@ export default function MyListsPage() {
     const [creating, setCreating] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [socialVisible, setSocialVisible] = useState(false);
 
     const fetchLists = async (pid: string, silent = false) => {
         if (!silent) setRefreshing(true);
@@ -293,11 +298,11 @@ export default function MyListsPage() {
 
         Promise.all([
             fetchLists(pid, true),
-            fetch(`/api/mylist?profileId=${pid}`)
-                .then(r => r.json())
-                .catch(() => []),
-        ]).then(([, mylist]) => {
+            fetch(`/api/mylist?profileId=${pid}`).then(r => r.json()).catch(() => []),
+            fetch("/api/config").then(r => r.json()).catch(() => ({})),
+        ]).then(([, mylist, cfg]) => {
             setMyList(Array.isArray(mylist) ? mylist : []);
+            setSocialVisible(cfg?.sections?.social === "visible");
         }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -452,6 +457,7 @@ export default function MyListsPage() {
                             list={list}
                             onDelete={handleDeleteList}
                             onMovieRemoved={handleMovieRemoved}
+                            canShare={socialVisible}
                         />
                     ))}
 
