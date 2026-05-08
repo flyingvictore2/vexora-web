@@ -16,6 +16,7 @@ interface Movie {
     requiredPlan: string;
     releaseDate?: string | null;
     trailerUrl?: string | null;
+    hidden?: boolean;
 }
 
 interface Episode {
@@ -100,6 +101,7 @@ export default function AdminMovies() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
     const [formData, setFormData] = useState(EMPTY_FORM);
+    const [togglingId, setTogglingId] = useState<string | null>(null);
 
     // Episode Management State
     const [isEpisodeModalOpen, setIsEpisodeModalOpen] = useState(false);
@@ -148,10 +150,30 @@ export default function AdminMovies() {
 
     useEffect(() => { fetchMovies(); }, []);
 
+    const toggleHidden = async (movie: Movie) => {
+        setTogglingId(movie.id);
+        try {
+            const newHidden = !movie.hidden;
+            const res = await fetch(`/api/admin/movies/${movie.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hidden: newHidden }),
+            });
+            if (!res.ok) throw new Error("Error");
+            setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, hidden: newHidden } : m));
+            showToast(newHidden ? "🙈 Título ocultado" : "👁️ Título visible");
+        } catch {
+            showToast("Error al cambiar visibilidad", false);
+        } finally {
+            setTogglingId(null);
+        }
+    };
+
     const filteredMovies = movies.filter(m => {
         const matchSearch =
             m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             m.genre.toLowerCase().includes(searchQuery.toLowerCase());
+        if (filterType === "HIDDEN") return matchSearch && !!m.hidden;
         const matchType = filterType === "ALL" || m.type === filterType;
         return matchSearch && matchType;
     });
@@ -374,6 +396,11 @@ export default function AdminMovies() {
                         <h1 style={{ fontSize: "2.5rem", fontWeight: "900", letterSpacing: "-1.5px", marginBottom: "0.5rem" }}>Biblioteca Multimedia</h1>
                         <p style={{ color: "var(--text-secondary)" }}>
                             {movies.length} títulos · {movies.filter(m => m.type === "MOVIE").length} películas · {movies.filter(m => m.type === "SERIE").length} series · {movies.filter(m => m.type === "ANIME").length} animes
+                            {movies.filter(m => m.hidden).length > 0 && (
+                                <span style={{ marginLeft: "8px", color: "rgba(239,68,68,0.7)", fontWeight: "700" }}>
+                                    · {movies.filter(m => m.hidden).length} ocultos
+                                </span>
+                            )}
                         </p>
                     </div>
                     <button type="button" onClick={() => { setEditingMovie(null); setFormData(EMPTY_FORM); setIsModalOpen(true); }} className="btn btn-primary">
@@ -394,8 +421,8 @@ export default function AdminMovies() {
                         <span style={{ position: "absolute", left: "15px", top: "50%", transform: "translateY(-50%)", opacity: 0.5 }}>🔍</span>
                     </div>
                     {/* Type filter buttons */}
-                    <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        {["ALL", "MOVIE", "SERIE", "ANIME", "DOCUMENTAL"].map(t => (
+                    <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                        {["ALL", "MOVIE", "SERIE", "ANIME", "DOCUMENTAL", "HIDDEN"].map(t => (
                             <button
                                 key={t}
                                 type="button"
@@ -403,12 +430,16 @@ export default function AdminMovies() {
                                 style={{
                                     padding: "8px 14px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: "800",
                                     cursor: "pointer", border: "1px solid",
-                                    backgroundColor: filterType === t ? "rgba(37,99,235,0.15)" : "rgba(255,255,255,0.03)",
-                                    borderColor: filterType === t ? "rgba(37,99,235,0.4)" : "rgba(255,255,255,0.08)",
+                                    backgroundColor: filterType === t
+                                        ? t === "HIDDEN" ? "rgba(239,68,68,0.15)" : "rgba(37,99,235,0.15)"
+                                        : "rgba(255,255,255,0.03)",
+                                    borderColor: filterType === t
+                                        ? t === "HIDDEN" ? "rgba(239,68,68,0.4)" : "rgba(37,99,235,0.4)"
+                                        : "rgba(255,255,255,0.08)",
                                     color: filterType === t ? "white" : "var(--text-secondary)",
                                 }}
                             >
-                                {t === "ALL" ? "Todos" : CONTENT_TYPES.find(c => c.value === t)?.label}
+                                {t === "ALL" ? "Todos" : t === "HIDDEN" ? `🙈 Ocultos${movies.filter(m => m.hidden).length > 0 ? ` (${movies.filter(m => m.hidden).length})` : ""}` : CONTENT_TYPES.find(c => c.value === t)?.label}
                             </button>
                         ))}
                     </div>
@@ -431,13 +462,23 @@ export default function AdminMovies() {
                                 <tr key={movie.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                                     <td style={{ padding: "1rem" }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-                                            <img src={movie.thumbnailUrl} alt={movie.title} style={{ width: "80px", height: "45px", objectFit: "cover", borderRadius: "4px", backgroundColor: "#222" }} />
+                                            <div style={{ position: "relative", flexShrink: 0 }}>
+                                                <img src={movie.thumbnailUrl} alt={movie.title} style={{ width: "80px", height: "45px", objectFit: "cover", borderRadius: "4px", backgroundColor: "#222", opacity: movie.hidden ? 0.35 : 1, transition: "opacity 0.2s" }} />
+                                                {movie.hidden && (
+                                                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem" }}>🙈</div>
+                                                )}
+                                            </div>
                                             <div>
-                                                <div style={{ fontWeight: "800", color: "white" }}>{movie.title}</div>
+                                                <div style={{ fontWeight: "800", color: movie.hidden ? "rgba(255,255,255,0.4)" : "white", display: "flex", alignItems: "center", gap: "8px" }}>
+                                                    {movie.title}
+                                                    {movie.hidden && (
+                                                        <span style={{ fontSize: "0.65rem", fontWeight: "800", padding: "2px 7px", borderRadius: "4px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", letterSpacing: "0.5px" }}>OCULTO</span>
+                                                    )}
+                                                </div>
                                                 <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{movie.duration}</div>
                                                 {movie.releaseDate && new Date(movie.releaseDate) > new Date() && (
                                                     <div style={{ marginTop: "4px", fontSize: "0.7rem", fontWeight: "800", color: "#f59e0b", display: "flex", alignItems: "center", gap: "4px" }}>
-                                                        ⏰ OCULTO — estreno {new Date(movie.releaseDate).toLocaleDateString("es-ES")}
+                                                        ⏰ ESTRENO — {new Date(movie.releaseDate).toLocaleDateString("es-ES")}
                                                     </div>
                                                 )}
                                             </div>
@@ -470,8 +511,27 @@ export default function AdminMovies() {
                                         </span>
                                     </td>
                                     <td style={{ padding: "1rem", textAlign: "right" }}>
-                                        <button type="button" onClick={() => openEdit(movie)} style={{ color: "var(--primary)", fontWeight: "700", marginRight: "15px", background: "none", border: "none", cursor: "pointer" }}>Editar</button>
-                                        <button type="button" onClick={() => confirmDelete(movie)} style={{ color: "#ef4444", fontWeight: "700", background: "none", border: "none", cursor: "pointer" }}>Eliminar</button>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleHidden(movie)}
+                                                disabled={togglingId === movie.id}
+                                                title={movie.hidden ? "Mostrar" : "Ocultar"}
+                                                style={{
+                                                    padding: "5px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "800",
+                                                    cursor: togglingId === movie.id ? "wait" : "pointer", border: "1px solid",
+                                                    background: movie.hidden ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.08)",
+                                                    borderColor: movie.hidden ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.2)",
+                                                    color: movie.hidden ? "#10b981" : "rgba(239,68,68,0.7)",
+                                                    opacity: togglingId === movie.id ? 0.5 : 1,
+                                                    transition: "all 0.2s",
+                                                }}
+                                            >
+                                                {togglingId === movie.id ? "..." : movie.hidden ? "👁️ Mostrar" : "🙈 Ocultar"}
+                                            </button>
+                                            <button type="button" onClick={() => openEdit(movie)} style={{ color: "var(--primary)", fontWeight: "700", background: "none", border: "none", cursor: "pointer" }}>Editar</button>
+                                            <button type="button" onClick={() => confirmDelete(movie)} style={{ color: "#ef4444", fontWeight: "700", background: "none", border: "none", cursor: "pointer" }}>Eliminar</button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

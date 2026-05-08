@@ -59,6 +59,7 @@ model movie {
   releaseDate  DateTime?
   trailerUrl   String?
   views        Int            @default(0)
+  hidden       Boolean        @default(false)
   mylist        mylist[]
   watchhistory  watchhistory[]
   episodes      episode[]

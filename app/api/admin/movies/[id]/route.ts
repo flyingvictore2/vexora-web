@@ -3,6 +3,39 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+async function isAdmin() {
+    const session = await getServerSession(authOptions);
+    return session && (session.user as any).role === "ADMIN";
+}
+
+// Self-heal: add hidden column if it doesn't exist yet
+async function ensureHiddenCol() {
+    await prisma.$executeRawUnsafe(
+        `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
+    ).catch(() => {});
+}
+
+// PATCH /api/admin/movies/[id] — toggle visibility { hidden: boolean }
+export async function PATCH(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    if (!await isAdmin()) return new NextResponse("Forbidden", { status: 403 });
+    try {
+        await ensureHiddenCol();
+        const { id } = await params;
+        const { hidden } = await req.json();
+        await prisma.$executeRawUnsafe(
+            `UPDATE movie SET hidden = $1 WHERE id = $2`,
+            !!hidden, id
+        );
+        return NextResponse.json({ ok: true, hidden: !!hidden });
+    } catch (err) {
+        console.error("[PATCH movie visibility]", err);
+        return new NextResponse("Internal Error", { status: 500 });
+    }
+}
+
 export async function DELETE(
     req: Request,
     { params }: { params: Promise<{ id: string }> }

@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// GET all movies
+// GET all movies (including hidden — admin only)
 export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session || (session.user as any).role !== "ADMIN") {
@@ -11,6 +11,11 @@ export async function GET() {
     }
 
     try {
+        // Self-heal: ensure hidden column exists before Prisma queries it
+        await prisma.$executeRawUnsafe(
+            `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
+        ).catch(() => {});
+
         const movies = await prisma.movie.findMany({
             orderBy: { createdAt: "desc" }
         });
