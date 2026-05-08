@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // GET /api/discover?type=top|random|filter&genre=&year=&quality=&plan=&q=
@@ -7,47 +9,57 @@ export async function GET(req: Request) {
     const action = searchParams.get("type") || "filter";
 
     try {
+        const session = await getServerSession(authOptions);
+        const isAdmin = (session?.user as any)?.role === "ADMIN";
+
+        // Self-heal
+        await prisma.$executeRawUnsafe(
+            `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
+        ).catch(() => {});
+        await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`).catch(() => {});
+
+        const hiddenClause = isAdmin ? "" : `AND (hidden IS NULL OR hidden = false)`;
+
         if (action === "random") {
-            const count = await prisma.movie.count();
-            if (count === 0) return NextResponse.json([]);
-            const skip = Math.floor(Math.random() * count);
-            const movies = await prisma.movie.findMany({ skip, take: 1 });
-            return NextResponse.json(movies);
+            const rows = await prisma.$queryRawUnsafe<any[]>(
+                `SELECT * FROM movie WHERE 1=1 ${hiddenClause} ORDER BY RANDOM() LIMIT 1`
+            );
+            return NextResponse.json(rows.map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0) })));
         }
 
         if (action === "top") {
-            // Top 10 by views (fallback to rating if views are 0)
-            await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`).catch(()=>{});
             const movies = await prisma.$queryRawUnsafe<any[]>(`
                 SELECT id, title, "thumbnailUrl", rating, year, type, genre, "views"
-                FROM "movie"
+                FROM movie
+                WHERE 1=1 ${hiddenClause}
                 ORDER BY COALESCE("views", 0) DESC, rating DESC
                 LIMIT 10
             `);
-            return NextResponse.json(movies.map((m: any) => ({ ...m, views: Number(m.views || 0), year: Number(m.year) })));
+            return NextResponse.json(movies.map(m => ({ ...m, views: Number(m.views || 0), year: Number(m.year) })));
         }
 
-        // Filter mode
-        const where: any = {};
+        // Filter mode — build conditions
+        const conditions: string[] = [`1=1`, hiddenClause].filter(Boolean);
+        const params: any[] = [];
+        let idx = 1;
+
         const genre = searchParams.get("genre");
         const year  = searchParams.get("year");
         const plan  = searchParams.get("plan");
         const type  = searchParams.get("contentType");
         const q     = searchParams.get("q");
 
-        if (genre) where.genre = { contains: genre, mode: "insensitive" };
-        if (year)  where.year = Number(year);
-        if (plan)  where.requiredPlan = plan;
-        if (type)  where.type = type;
-        if (q)     where.title = { contains: q, mode: "insensitive" };
+        if (genre) { conditions.push(`genre ILIKE $${idx++}`); params.push(`%${genre}%`); }
+        if (year)  { conditions.push(`year = $${idx++}`); params.push(Number(year)); }
+        if (plan)  { conditions.push(`"requiredPlan" = $${idx++}`); params.push(plan); }
+        if (type)  { conditions.push(`type = $${idx++}`); params.push(type); }
+        if (q)     { conditions.push(`title ILIKE $${idx++}`); params.push(`%${q}%`); }
 
-        const movies = await prisma.movie.findMany({
-            where,
-            take: 60,
-            orderBy: { createdAt: "desc" },
-        });
-        return NextResponse.json(movies);
+        const sql = `SELECT * FROM movie WHERE ${conditions.join(" ")} ORDER BY "createdAt" DESC LIMIT 60`;
+        const movies = await prisma.$queryRawUnsafe<any[]>(sql, ...params);
+        return NextResponse.json(movies.map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0) })));
     } catch (err: any) {
+        console.error("[GET /api/discover]", err);
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
