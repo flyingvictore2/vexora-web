@@ -28,6 +28,7 @@ export async function GET() {
 
         const keys = [
             "siteName","allowNewRegistrations","stripeEnabled","paypalEnabled","maintenanceTime",
+            "maintenanceTarget",
             ...NAV_SECTIONS.map(k => `nav.${k}`),
         ];
         const settings = await prisma.setting.findMany({ where: { key: { in: keys } } });
@@ -38,12 +39,18 @@ export async function GET() {
             sections[k] = resolveSection(raw[`nav.${k}`], isAdmin);
         }
 
+        // Tell client if maintenance is active for them right now
+        const mt = raw.maintenanceTarget || "false";
+        const maintenanceActive =
+            mt === "ALL" || (mt === "NON_ADMINS" && !isAdmin);
+
         return NextResponse.json({
             siteName: raw.siteName || "Vexora",
             allowNewRegistrations: raw.allowNewRegistrations !== "false",
             stripeEnabled: raw.stripeEnabled !== "false",
             paypalEnabled: raw.paypalEnabled !== "false",
             maintenanceTime: raw.maintenanceTime || "30 MINUTOS",
+            maintenanceActive,
             sections,
         });
     } catch (error) {

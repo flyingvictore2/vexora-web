@@ -34,13 +34,19 @@ export default function Navbar() {
             document.body.classList.add("light-theme");
         }
 
-        fetch("/api/config")
-            .then(r => r.json())
-            .then(d => {
-                if (d.siteName) setSiteName(d.siteName);
-                if (d.sections) setSections(prev => ({ ...prev, ...d.sections }));
-            })
-            .catch(() => { });
+        const fetchConfig = () =>
+            fetch("/api/config")
+                .then(r => r.json())
+                .then(d => {
+                    if (d.siteName) setSiteName(d.siteName);
+                    if (d.sections) setSections(prev => ({ ...prev, ...d.sections }));
+                    // If maintenance is active for this user, reload so server redirects them
+                    if (d.maintenanceActive) window.location.reload();
+                })
+                .catch(() => {});
+
+        fetchConfig();
+        const configInterval = setInterval(fetchConfig, 30_000);
 
         // Initial notification fetch + avatar GIF
         const selectedProfileId = localStorage.getItem("selectedProfileId");
@@ -72,7 +78,7 @@ export default function Navbar() {
             }
         }, 30000);
 
-        return () => clearInterval(interval);
+        return () => { clearInterval(interval); clearInterval(configInterval); };
     }, []);
 
     const toggleTheme = () => {
