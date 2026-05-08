@@ -25,8 +25,23 @@ interface RowProps {
     progressMap?: Record<string, number>;
 }
 
+function trailerSrc(url: string): string {
+    try {
+        const u = new URL(url);
+        u.searchParams.set("autoplay", "1");
+        u.searchParams.set("mute", "1");
+        u.searchParams.set("controls", "0");
+        u.searchParams.set("loop", "1");
+        u.searchParams.set("playsinline", "1");
+        return u.toString();
+    } catch {
+        return url;
+    }
+}
+
 export default function Row({ title, movies, isLargeRow, progressMap }: RowProps) {
     const rowRef = useRef<HTMLDivElement>(null);
+    const [hoveredId, setHoveredId] = React.useState<string | null>(null);
 
     if (!movies || movies.length === 0) return null;
 
@@ -61,7 +76,13 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                             : `/title/${movie.id}`;
                         const pct = progressMap?.[movie.id];
                         return (
-                            <div key={movie.id} className={`${styles.posterWrapper} trailer-host`} style={{ position: "relative" }}>
+                            <div
+                                key={movie.id}
+                                className={styles.posterWrapper}
+                                style={{ position: "relative" }}
+                                onMouseEnter={() => movie.trailerUrl && setHoveredId(movie.id)}
+                                onMouseLeave={() => setHoveredId(null)}
+                            >
                                 <Link href={href} style={{ display: "block", position: "relative" }}>
                                     <img
                                         src={movie.thumbnailUrl}
@@ -93,18 +114,18 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                                 </Link>
                                 {movie.trailerUrl && (
                                     <iframe
-                                        className="trailer-iframe"
-                                        src={movie.trailerUrl}
-                                        allow="autoplay; encrypted-media"
+                                        src={hoveredId === movie.id ? trailerSrc(movie.trailerUrl) : undefined}
+                                        allow="autoplay; encrypted-media; fullscreen"
                                         style={{
                                             position: "absolute", inset: 0,
                                             width: "100%", height: "100%",
                                             border: "none",
-                                            opacity: 0,
+                                            borderRadius: "inherit",
+                                            opacity: hoveredId === movie.id ? 1 : 0,
+                                            transition: "opacity 0.35s ease 0.3s",
                                             pointerEvents: "none",
                                             zIndex: 5,
                                         }}
-                                        loading="lazy"
                                     />
                                 )}
                             </div>
