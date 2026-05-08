@@ -130,15 +130,16 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                                 </Link>
                                 {movie.trailerUrl && (
                                     <iframe
-                                        src={hoveredId === movie.id ? trailerSrc(movie.trailerUrl) : undefined}
-                                        allow="autoplay; encrypted-media; fullscreen"
+                                        src={hoveredId === movie.id ? trailerSrc(movie.trailerUrl) : "about:blank"}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowFullScreen
                                         style={{
                                             position: "absolute", inset: 0,
                                             width: "100%", height: "100%",
                                             border: "none",
                                             borderRadius: "inherit",
                                             opacity: hoveredId === movie.id ? 1 : 0,
-                                            transition: "opacity 0.35s ease 0.3s",
+                                            transition: "opacity 0.5s ease 0.4s",
                                             pointerEvents: "none",
                                             zIndex: 5,
                                         }}
