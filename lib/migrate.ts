@@ -16,6 +16,7 @@ export async function ensureMigrations() {
         await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "user_username_key" ON "user"("username")`).catch(() => {});
         await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "trailerUrl" TEXT`);
         await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`);
+        await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "hidden" BOOLEAN NOT NULL DEFAULT false`);
 
         await prisma.$executeRawUnsafe(`ALTER TABLE "profile" ADD COLUMN IF NOT EXISTS "avatarGifUrl" TEXT`);
         await prisma.$executeRawUnsafe(`ALTER TABLE "profile" ADD COLUMN IF NOT EXISTS "themeColor" TEXT DEFAULT 'indigo'`);

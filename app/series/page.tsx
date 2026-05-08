@@ -14,38 +14,42 @@ interface PageProps {
 
 export default async function SeriesPage({ searchParams }: PageProps) {
     await ensureMigrations();
-    await prisma.$executeRawUnsafe(
-        `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
-    ).catch(() => {});
 
     const session = await getServerSession(authOptions);
     const isAdmin = (session?.user as any)?.role === "ADMIN";
 
     const params = await searchParams;
     const genre = params.genre || "";
-    const year = params.year || "";
-    const sort = params.sort || "";
+    const year  = params.year  || "";
+    const sort  = params.sort  || "";
 
-    const where: Record<string, unknown> = { type: { in: ["SERIE", "SERIES"] } };
-    if (!isAdmin) where.hidden = false;
-    if (genre) where.genre = genre;
-    if (year) where.year = parseInt(year);
+    const conditions: string[] = [`type IN ('SERIE','SERIES')`];
+    const values: any[] = [];
+    let idx = 1;
 
-    let series = await prisma.movie.findMany({
-        where,
-        orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
-    });
+    if (!isAdmin) conditions.push(`(hidden IS NULL OR hidden = false)`);
+    if (genre) { conditions.push(`genre = $${idx++}`); values.push(genre); }
+    if (year)  { conditions.push(`year = $${idx++}`);  values.push(parseInt(year)); }
+
+    const orderSQL =
+        sort === "oldest" ? `"createdAt" ASC` :
+        sort === "az"     ? `title ASC` :
+                            `"createdAt" DESC`;
+
+    const sql = `SELECT * FROM movie WHERE ${conditions.join(" AND ")} ORDER BY ${orderSQL}`;
+    let series: any[] = await prisma.$queryRawUnsafe(sql, ...values);
+    series = series.map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0) }));
 
     if (sort === "rating") {
         series = series.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
     }
 
-    const allSeries = await prisma.movie.findMany({
-        where: { type: { in: ["SERIE", "SERIES"] }, ...(!isAdmin ? { hidden: false } : {}) },
-        select: { genre: true, year: true },
-    });
-    const genres = [...new Set(allSeries.map(m => m.genre).filter(Boolean))].sort() as string[];
-    const years = [...new Set(allSeries.map(m => m.year).filter(Boolean))].sort((a, b) => b - a) as number[];
+    const hiddenFilter = isAdmin ? "" : `AND (hidden IS NULL OR hidden = false)`;
+    const meta = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT genre, year FROM movie WHERE type IN ('SERIE','SERIES') ${hiddenFilter}`
+    );
+    const genres = [...new Set(meta.map(m => m.genre).filter(Boolean))].sort() as string[];
+    const years  = [...new Set(meta.map(m => Number(m.year)).filter(Boolean))].sort((a, b) => b - a) as number[];
 
     return (
         <div style={{ padding: "2rem 4% 4rem" }}>

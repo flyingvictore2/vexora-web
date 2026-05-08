@@ -13,43 +13,45 @@ interface PageProps {
 }
 
 export default async function MoviesPage({ searchParams }: PageProps) {
-    await ensureMigrations();
-    // Self-heal hidden column
-    await prisma.$executeRawUnsafe(
-        `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
-    ).catch(() => {});
+    await ensureMigrations(); // also self-heals hidden column now
 
     const session = await getServerSession(authOptions);
     const isAdmin = (session?.user as any)?.role === "ADMIN";
 
     const params = await searchParams;
     const genre = params.genre || "";
-    const year = params.year || "";
-    const sort = params.sort || "";
+    const year  = params.year  || "";
+    const sort  = params.sort  || "";
 
-    // Build filter
-    const where: Record<string, unknown> = { type: "MOVIE" };
-    if (!isAdmin) where.hidden = false;
-    if (genre) where.genre = genre;
-    if (year) where.year = parseInt(year);
+    // Build raw SQL — reliable regardless of Prisma client version
+    const conditions: string[] = [`type = 'MOVIE'`];
+    const values: any[] = [];
+    let idx = 1;
 
-    // Fetch filtered movies
-    let movies = await prisma.movie.findMany({
-        where,
-        orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
-    });
+    if (!isAdmin) conditions.push(`(hidden IS NULL OR hidden = false)`);
+    if (genre) { conditions.push(`genre = $${idx++}`); values.push(genre); }
+    if (year)  { conditions.push(`year = $${idx++}`);  values.push(parseInt(year)); }
+
+    const orderSQL =
+        sort === "oldest" ? `"createdAt" ASC` :
+        sort === "az"     ? `title ASC` :
+                            `"createdAt" DESC`;
+
+    const sql = `SELECT * FROM movie WHERE ${conditions.join(" AND ")} ORDER BY ${orderSQL}`;
+    let movies: any[] = await prisma.$queryRawUnsafe(sql, ...values);
+    movies = movies.map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0) }));
 
     if (sort === "rating") {
         movies = movies.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
     }
 
-    // Get genres/years for FilterBar — also hide hidden from filter options for non-admins
-    const allMovies = await prisma.movie.findMany({
-        where: { type: "MOVIE", ...(!isAdmin ? { hidden: false } : {}) },
-        select: { genre: true, year: true },
-    });
-    const genres = [...new Set(allMovies.map(m => m.genre).filter(Boolean))].sort() as string[];
-    const years = [...new Set(allMovies.map(m => m.year).filter(Boolean))].sort((a, b) => b - a) as number[];
+    // Genres/years for FilterBar
+    const hiddenFilter = isAdmin ? "" : `AND (hidden IS NULL OR hidden = false)`;
+    const meta = await prisma.$queryRawUnsafe<any[]>(
+        `SELECT genre, year FROM movie WHERE type = 'MOVIE' ${hiddenFilter}`
+    );
+    const genres = [...new Set(meta.map(m => m.genre).filter(Boolean))].sort() as string[];
+    const years  = [...new Set(meta.map(m => Number(m.year)).filter(Boolean))].sort((a, b) => b - a) as number[];
 
     return (
         <div style={{ padding: "2rem 4% 4rem" }}>
