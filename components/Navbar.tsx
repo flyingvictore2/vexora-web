@@ -46,7 +46,7 @@ export default function Navbar() {
                 .catch(() => {});
 
         fetchConfig();
-        const configInterval = setInterval(fetchConfig, 30_000);
+        const configInterval = setInterval(fetchConfig, 5_000);
 
         // Initial notification fetch + avatar GIF
         const selectedProfileId = localStorage.getItem("selectedProfileId");
