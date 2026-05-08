@@ -3,9 +3,6 @@ import prisma from "@/lib/prisma";
 import FilterBar from "@/components/FilterBar";
 import MovieGrid from "@/components/MovieGrid";
 import { ensureMigrations } from "@/lib/migrate";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-
 export const dynamic = "force-dynamic";
 
 interface PageProps {
@@ -15,20 +12,14 @@ interface PageProps {
 export default async function MoviesPage({ searchParams }: PageProps) {
     await ensureMigrations(); // also self-heals hidden column now
 
-    const session = await getServerSession(authOptions);
-    const isAdmin = (session?.user as any)?.role === "ADMIN";
-
     const params = await searchParams;
     const genre = params.genre || "";
     const year  = params.year  || "";
     const sort  = params.sort  || "";
 
-    // Build raw SQL — reliable regardless of Prisma client version
-    const conditions: string[] = [`type = 'MOVIE'`];
+    const conditions: string[] = [`type = 'MOVIE'`, `(hidden IS NULL OR hidden = false)`];
     const values: any[] = [];
     let idx = 1;
-
-    if (!isAdmin) conditions.push(`(hidden IS NULL OR hidden = false)`);
     if (genre) { conditions.push(`genre = $${idx++}`); values.push(genre); }
     if (year)  { conditions.push(`year = $${idx++}`);  values.push(parseInt(year)); }
 
@@ -45,10 +36,8 @@ export default async function MoviesPage({ searchParams }: PageProps) {
         movies = movies.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
     }
 
-    // Genres/years for FilterBar
-    const hiddenFilter = isAdmin ? "" : `AND (hidden IS NULL OR hidden = false)`;
     const meta = await prisma.$queryRawUnsafe<any[]>(
-        `SELECT genre, year FROM movie WHERE type = 'MOVIE' ${hiddenFilter}`
+        `SELECT genre, year FROM movie WHERE type = 'MOVIE' AND (hidden IS NULL OR hidden = false)`
     );
     const genres = [...new Set(meta.map(m => m.genre).filter(Boolean))].sort() as string[];
     const years  = [...new Set(meta.map(m => Number(m.year)).filter(Boolean))].sort((a, b) => b - a) as number[];

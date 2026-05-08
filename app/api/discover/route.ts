@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // GET /api/discover?type=top|random|filter&genre=&year=&quality=&plan=&q=
@@ -9,16 +7,13 @@ export async function GET(req: Request) {
     const action = searchParams.get("type") || "filter";
 
     try {
-        const session = await getServerSession(authOptions);
-        const isAdmin = (session?.user as any)?.role === "ADMIN";
-
-        // Self-heal
         await prisma.$executeRawUnsafe(
             `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
         ).catch(() => {});
         await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`).catch(() => {});
 
-        const hiddenClause = isAdmin ? "" : `AND (hidden IS NULL OR hidden = false)`;
+        // Always filter hidden — admin panel has its own endpoint that shows all
+        const hiddenClause = `AND (hidden IS NULL OR hidden = false)`;
 
         if (action === "random") {
             const rows = await prisma.$queryRawUnsafe<any[]>(
@@ -38,8 +33,8 @@ export async function GET(req: Request) {
             return NextResponse.json(movies.map(m => ({ ...m, views: Number(m.views || 0), year: Number(m.year) })));
         }
 
-        // Filter mode — build conditions
-        const conditions: string[] = [`1=1`, hiddenClause].filter(Boolean);
+        // Filter mode
+        const conditions: string[] = [`1=1`, hiddenClause];
         const params: any[] = [];
         let idx = 1;
 
