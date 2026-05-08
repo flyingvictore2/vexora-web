@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import FilterBar from "@/components/FilterBar";
 import MovieGrid from "@/components/MovieGrid";
 import { ensureMigrations } from "@/lib/migrate";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,17 +14,23 @@ interface PageProps {
 
 export default async function SeriesPage({ searchParams }: PageProps) {
     await ensureMigrations();
+    await prisma.$executeRawUnsafe(
+        `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
+    ).catch(() => {});
+
+    const session = await getServerSession(authOptions);
+    const isAdmin = (session?.user as any)?.role === "ADMIN";
+
     const params = await searchParams;
     const genre = params.genre || "";
     const year = params.year || "";
     const sort = params.sort || "";
 
-    // Build filter — support both "SERIE" and "SERIES" values
     const where: Record<string, unknown> = { type: { in: ["SERIE", "SERIES"] } };
+    if (!isAdmin) where.hidden = false;
     if (genre) where.genre = genre;
     if (year) where.year = parseInt(year);
 
-    // Fetch filtered series
     let series = await prisma.movie.findMany({
         where,
         orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
@@ -32,9 +40,8 @@ export default async function SeriesPage({ searchParams }: PageProps) {
         series = series.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
     }
 
-    // Get all genres and years for FilterBar (unfiltered)
     const allSeries = await prisma.movie.findMany({
-        where: { type: { in: ["SERIE", "SERIES"] } },
+        where: { type: { in: ["SERIE", "SERIES"] }, ...(!isAdmin ? { hidden: false } : {}) },
         select: { genre: true, year: true },
     });
     const genres = [...new Set(allSeries.map(m => m.genre).filter(Boolean))].sort() as string[];

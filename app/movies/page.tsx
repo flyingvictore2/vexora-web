@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import FilterBar from "@/components/FilterBar";
 import MovieGrid from "@/components/MovieGrid";
 import { ensureMigrations } from "@/lib/migrate";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,14 @@ interface PageProps {
 
 export default async function MoviesPage({ searchParams }: PageProps) {
     await ensureMigrations();
+    // Self-heal hidden column
+    await prisma.$executeRawUnsafe(
+        `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
+    ).catch(() => {});
+
+    const session = await getServerSession(authOptions);
+    const isAdmin = (session?.user as any)?.role === "ADMIN";
+
     const params = await searchParams;
     const genre = params.genre || "";
     const year = params.year || "";
@@ -19,6 +29,7 @@ export default async function MoviesPage({ searchParams }: PageProps) {
 
     // Build filter
     const where: Record<string, unknown> = { type: "MOVIE" };
+    if (!isAdmin) where.hidden = false;
     if (genre) where.genre = genre;
     if (year) where.year = parseInt(year);
 
@@ -28,14 +39,13 @@ export default async function MoviesPage({ searchParams }: PageProps) {
         orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
     });
 
-    // Sort by rating in JS (stored as string)
     if (sort === "rating") {
         movies = movies.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
     }
 
-    // Get all genres and years for FilterBar (unfiltered)
+    // Get genres/years for FilterBar — also hide hidden from filter options for non-admins
     const allMovies = await prisma.movie.findMany({
-        where: { type: "MOVIE" },
+        where: { type: "MOVIE", ...(!isAdmin ? { hidden: false } : {}) },
         select: { genre: true, year: true },
     });
     const genres = [...new Set(allMovies.map(m => m.genre).filter(Boolean))].sort() as string[];

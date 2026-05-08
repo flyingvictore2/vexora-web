@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import FilterBar from "@/components/FilterBar";
 import MovieGrid from "@/components/MovieGrid";
 import { ensureMigrations } from "@/lib/migrate";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,17 +14,23 @@ interface PageProps {
 
 export default async function AnimesPage({ searchParams }: PageProps) {
     await ensureMigrations();
+    await prisma.$executeRawUnsafe(
+        `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
+    ).catch(() => {});
+
+    const session = await getServerSession(authOptions);
+    const isAdmin = (session?.user as any)?.role === "ADMIN";
+
     const params = await searchParams;
     const genre = params.genre || "";
     const year = params.year || "";
     const sort = params.sort || "";
 
-    // Build filter
     const where: Record<string, unknown> = { type: "ANIME" };
+    if (!isAdmin) where.hidden = false;
     if (genre) where.genre = genre;
     if (year) where.year = parseInt(year);
 
-    // Fetch filtered anime
     let animes = await prisma.movie.findMany({
         where,
         orderBy: sort === "oldest" ? { createdAt: "asc" } : sort === "az" ? { title: "asc" } : { createdAt: "desc" },
@@ -32,9 +40,8 @@ export default async function AnimesPage({ searchParams }: PageProps) {
         animes = animes.sort((a, b) => parseFloat(b.rating || "0") - parseFloat(a.rating || "0"));
     }
 
-    // Get all genres and years for FilterBar (unfiltered)
     const allAnimes = await prisma.movie.findMany({
-        where: { type: "ANIME" },
+        where: { type: "ANIME", ...(!isAdmin ? { hidden: false } : {}) },
         select: { genre: true, year: true },
     });
     const genres = [...new Set(allAnimes.map(m => m.genre).filter(Boolean))].sort() as string[];
