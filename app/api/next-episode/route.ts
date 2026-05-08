@@ -25,13 +25,14 @@ export async function GET(req: Request) {
             )
         `);
 
-        // Series the user has started (movies of type SERIE/ANIME with watchhistory rows)
+        // Series the user has started — exclude hidden
         const startedSeries = await prisma.$queryRawUnsafe<any[]>(`
             SELECT DISTINCT m.id, m.title, m."thumbnailUrl", m.type, m.genre
             FROM "watchhistory" w
             JOIN "movie" m ON m.id = w."movieId"
             WHERE w."profileId" = $1
               AND m.type IN ('SERIE', 'ANIME')
+              AND (m.hidden IS NULL OR m.hidden = false)
             ORDER BY m.id
             LIMIT 20
         `, profileId);

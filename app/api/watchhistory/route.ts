@@ -21,6 +21,7 @@ export async function GET(req: Request) {
             FROM "watchhistory" w
             JOIN "movie" m ON m.id = w."movieId"
             WHERE w."profileId" = $1
+              AND (m.hidden IS NULL OR m.hidden = false)
             ORDER BY w."updatedAt" DESC
             LIMIT 50
         `, profileId);
