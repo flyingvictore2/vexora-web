@@ -11,8 +11,10 @@ const SECTION_DEFS = [
     { key: "requests", icon: "📨", label: "Solicitudes" },
     { key: "support",  icon: "💬", label: "Soporte" },
     { key: "plans",    icon: "💳", label: "Planes" },
-    { key: "search",   icon: "🔍", label: "Búsqueda" },
-    { key: "social",   icon: "🌐", label: "Social" },
+    { key: "search",       icon: "🔍", label: "Búsqueda" },
+    { key: "social",       icon: "🌐", label: "Social" },
+    { key: "achievements", icon: "🏆", label: "Logros" },
+    { key: "level",        icon: "⭐", label: "Nivel" },
 ];
 
 const getStatus = (v: string) =>

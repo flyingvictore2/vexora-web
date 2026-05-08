@@ -20,7 +20,7 @@ export default function Navbar() {
     const [sections, setSections] = useState<Record<string, "visible" | "soon" | "hidden">>({
         movies: "visible", series: "visible", animes: "visible", list: "visible",
         calendar: "visible", requests: "visible", support: "visible", plans: "visible",
-        search: "visible", social: "visible",
+        search: "visible", social: "visible", achievements: "visible", level: "visible",
     });
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const pathname = usePathname();
@@ -344,12 +344,21 @@ export default function Navbar() {
                                         <Link href="/account" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
                                             ⚙️ {t("nav.account")}
                                         </Link>
-                                        <Link href="/list" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
-                                            🔖 {t("nav.mylist")}
-                                        </Link>
-                                        <Link href="/achievements" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>
-                                            🏆 {t("nav.achievements")}
-                                        </Link>
+                                        {sections.list !== "hidden" && (
+                                            sections.list === "soon"
+                                                ? <span style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}>🔖 {t("nav.mylist")}{prontoTag}</span>
+                                                : <Link href="/list" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>🔖 {t("nav.mylist")}</Link>
+                                        )}
+                                        {sections.achievements !== "hidden" && (
+                                            sections.achievements === "soon"
+                                                ? <span style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}>🏆 {t("nav.achievements")}{prontoTag}</span>
+                                                : <Link href="/achievements" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>🏆 {t("nav.achievements")}</Link>
+                                        )}
+                                        {sections.level !== "hidden" && (
+                                            sections.level === "soon"
+                                                ? <span style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}>⭐ Nivel{prontoTag}</span>
+                                                : <Link href="/level" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>⭐ Nivel</Link>
+                                        )}
                                     </div>
 
                                     {/* Social Section */}
