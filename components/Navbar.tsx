@@ -20,7 +20,7 @@ export default function Navbar() {
     const [sections, setSections] = useState<Record<string, "visible" | "soon" | "hidden">>({
         movies: "visible", series: "visible", animes: "visible", list: "visible",
         calendar: "visible", requests: "visible", support: "visible", plans: "visible",
-        search: "visible", social: "visible", achievements: "visible", level: "visible",
+        search: "visible", social: "visible", achievements: "visible",
     });
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const pathname = usePathname();

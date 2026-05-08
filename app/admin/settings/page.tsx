@@ -13,8 +13,7 @@ const SECTION_DEFS = [
     { key: "plans",    icon: "💳", label: "Planes" },
     { key: "search",       icon: "🔍", label: "Búsqueda" },
     { key: "social",       icon: "🌐", label: "Social" },
-    { key: "achievements", icon: "🏆", label: "Logros" },
-    { key: "level",        icon: "⭐", label: "Nivel" },
+    { key: "achievements", icon: "🏆", label: "Logros y nivel" },
 ];
 
 const getStatus = (v: string) =>

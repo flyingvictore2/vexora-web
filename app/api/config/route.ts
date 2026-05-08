@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const NAV_SECTIONS = [
     "movies","series","animes","list","calendar",
     "requests","support","plans","search","social",
-    "achievements","level",
+    "achievements",
 ];
 
 function resolveSection(raw: string | undefined, isAdmin: boolean): "visible" | "soon" | "hidden" {
