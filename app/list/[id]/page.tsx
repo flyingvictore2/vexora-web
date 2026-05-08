@@ -184,8 +184,8 @@ export default function ListDetailPage() {
                                 <button onClick={() => removeMovie(item.movieId)} disabled={removing === item.movieId}
                                     title="Quitar de la lista"
                                     style={{ position: "absolute", top: 6, right: 6, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.75)", border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.7)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", opacity: removing === item.movieId ? 0.4 : 1 }}
-                                    onMouseOver={e => { (e.currentTarget.style.background = "rgba(239,68,68,0.8)"; e.currentTarget.style.color = "white"); }}
-                                    onMouseOut={e => { (e.currentTarget.style.background = "rgba(0,0,0,0.75)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"); }}>
+                                    onMouseOver={e => { e.currentTarget.style.background = "rgba(239,68,68,0.8)"; e.currentTarget.style.color = "white"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = "rgba(0,0,0,0.75)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}>
                                     ✕
                                 </button>
                                 <div style={{ marginTop: "4px" }}>
