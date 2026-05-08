@@ -20,10 +20,15 @@ export async function GET(req: Request) {
             : `(hidden = false OR hidden IS NULL)`;
         const releaseClause = all ? "" : `AND ("releaseDate" IS NULL OR "releaseDate" <= NOW())`;
 
-        const movies = await prisma.$queryRawUnsafe<any[]>(
-            `SELECT * FROM movie WHERE ${visClause} ${releaseClause} ORDER BY "createdAt" DESC`
-        );
-        return NextResponse.json(movies.map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0) })));
+        const movies = await prisma.$queryRawUnsafe<any[]>(`
+            SELECT m.*,
+                (SELECT ROUND(AVG(r.score)::numeric, 1) FROM "Rating" r WHERE r."movieId" = m.id) AS "communityRating",
+                (SELECT COUNT(*)::int FROM "Rating" r WHERE r."movieId" = m.id) AS "ratingCount"
+            FROM movie m
+            WHERE ${visClause} ${releaseClause}
+            ORDER BY m."createdAt" DESC
+        `);
+        return NextResponse.json(movies.map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0), communityRating: m.communityRating ? Number(m.communityRating) : null, ratingCount: Number(m.ratingCount ?? 0) })));
     } catch (error) {
         console.error("GET_MOVIES_ERROR", error);
         return new NextResponse("Internal Error", { status: 500 });

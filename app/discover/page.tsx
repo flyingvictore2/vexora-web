@@ -137,7 +137,7 @@ export default function DiscoverPage() {
                                     <img src={m.thumbnailUrl} alt={m.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 </div>
                                 <div style={{ fontSize: "0.88rem", fontWeight: "700", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.title}</div>
-                                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)" }}>{m.year} · ★ {m.rating}</div>
+                                <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)" }}>{m.year}{m.communityRating != null ? ` · ★ ${Number(m.communityRating).toFixed(1)}` : ""}</div>
                             </Link>
                         );
                     })}

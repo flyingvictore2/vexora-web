@@ -47,7 +47,10 @@ export async function GET(req: Request) {
                 : "";
 
             recommendations = await prisma.$queryRawUnsafe<any[]>(`
-                SELECT m.* FROM movie m
+                SELECT m.*,
+                    (SELECT ROUND(AVG(r.score)::numeric, 1) FROM "Rating" r WHERE r."movieId" = m.id) AS "communityRating",
+                    (SELECT COUNT(*)::int FROM "Rating" r WHERE r."movieId" = m.id) AS "ratingCount"
+                FROM movie m
                 WHERE (${genreConditions || "1=1"})
                 ${hiddenClause}
                 ${excludeClause}
@@ -63,12 +66,15 @@ export async function GET(req: Request) {
                 : "";
 
             const extra = await prisma.$queryRawUnsafe<any[]>(`
-                SELECT m.* FROM movie m
+                SELECT m.*,
+                    (SELECT ROUND(AVG(r.score)::numeric, 1) FROM "Rating" r WHERE r."movieId" = m.id) AS "communityRating",
+                    (SELECT COUNT(*)::int FROM "Rating" r WHERE r."movieId" = m.id) AS "ratingCount"
+                FROM movie m
                 WHERE 1=1
                 ${hiddenClause}
                 ${excludeClause}
                 AND (m."releaseDate" IS NULL OR m."releaseDate" <= NOW())
-                ORDER BY m.rating DESC
+                ORDER BY m."createdAt" DESC
                 LIMIT ${10 - recommendations.length}
             `);
             recommendations = [...recommendations, ...extra];
@@ -76,7 +82,7 @@ export async function GET(req: Request) {
 
         recommendations = recommendations
             .sort(() => Math.random() - 0.5)
-            .map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0) }));
+            .map(m => ({ ...m, year: Number(m.year), views: Number(m.views ?? 0), communityRating: m.communityRating ? Number(m.communityRating) : null, ratingCount: Number(m.ratingCount ?? 0) }));
 
         return NextResponse.json(recommendations);
     } catch (error) {

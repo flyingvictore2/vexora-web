@@ -74,7 +74,7 @@ export default function SearchPage() {
                     }}>
                         {results.map((movie: any) => (
                             <Link key={movie.id} href={`/title/${movie.id}`} className={styles.posterWrapper}>
-                                <div className={styles.miniBadge}>★ {movie.rating}</div>
+                                {movie.communityRating != null && <div className={styles.miniBadge}>★ {Number(movie.communityRating).toFixed(1)}</div>}
                                 <img
                                     src={movie.thumbnailUrl}
                                     alt={movie.title}

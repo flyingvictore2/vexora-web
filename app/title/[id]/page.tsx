@@ -32,6 +32,13 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
         select: { id: true, title: true, thumbnailUrl: true, rating: true, type: true },
     });
 
+    // Community average rating for this movie
+    const ratingRows = await prisma.$queryRawUnsafe<{ avg: string; cnt: string }[]>(
+        `SELECT ROUND(AVG(score)::numeric, 1)::text AS avg, COUNT(*)::text AS cnt FROM "Rating" WHERE "movieId" = $1`, id
+    ).catch(() => []);
+    const communityRating = ratingRows[0]?.avg ? Number(ratingRows[0].avg) : null;
+    const ratingCount = ratingRows[0]?.cnt ? Number(ratingRows[0].cnt) : 0;
+
     const isSeriesOrAnime = movie.type === "SERIE" || movie.type === "ANIME";
 
     // Build server list — fall back to videoUrl if no dedicated servers
@@ -94,9 +101,9 @@ export default async function TitlePage({ params }: { params: Promise<{ id: stri
                                 <span>⏱</span> {movie.duration}
                             </div>
                         )}
-                        {movie.rating && (
+                        {communityRating != null && (
                             <div style={{ display: "flex", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "#eab308", fontWeight: "700" }}>
-                                <span>★</span> {movie.rating}
+                                <span>★</span> {communityRating.toFixed(1)}<span style={{ color: "#94a3b8", fontWeight: "400", fontSize: "0.75rem" }}>({ratingCount})</span>
                             </div>
                         )}
                         {movie.genre && (

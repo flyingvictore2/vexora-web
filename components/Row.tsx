@@ -16,6 +16,8 @@ export interface Movie {
     year: number;
     type: string;
     trailerUrl?: string | null;
+    communityRating?: number | null;
+    ratingCount?: number;
 }
 
 interface RowProps {
@@ -109,7 +111,7 @@ export default function Row({ title, movies, isLargeRow, progressMap }: RowProps
                                         <div className={styles.playBtn}>▶</div>
                                         <p className={styles.overlayTitle}>{movie.title}</p>
                                         <div className={styles.overlayMeta}>
-                                            {movie.rating && <span className={styles.rating}>★ {movie.rating}</span>}
+                                            {movie.communityRating != null && <span className={styles.rating}>★ {movie.communityRating.toFixed(1)}</span>}
                                             {movie.year && <span className={styles.year}>{movie.year}</span>}
                                         </div>
                                     </div>

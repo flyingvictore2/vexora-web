@@ -31,6 +31,13 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
         notFound();
     }
 
+    // Community average rating
+    const ratingRows = await prisma.$queryRawUnsafe<{ avg: string; cnt: string }[]>(
+        `SELECT ROUND(AVG(score)::numeric, 1)::text AS avg, COUNT(*)::text AS cnt FROM "Rating" WHERE "movieId" = $1`, id
+    ).catch(() => []);
+    const communityRating = ratingRows[0]?.avg ? Number(ratingRows[0].avg) : null;
+    const ratingCount = ratingRows[0]?.cnt ? Number(ratingRows[0].cnt) : 0;
+
     // Group episodes by season
     const seasons = series.episodes.reduce((acc: any, ep) => {
         if (!acc[ep.seasonNumber]) acc[ep.seasonNumber] = [];
@@ -53,7 +60,10 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
                     <div style={{ display: "flex", gap: "10px", marginBottom: "1rem" }}>
                         <span style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: "4px 12px", borderRadius: "4px", fontSize: "0.8rem" }}>{series.genre}</span>
                         <span style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: "4px 12px", borderRadius: "4px", fontSize: "0.8rem" }}>{series.year}</span>
-                        <span style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: "4px 12px", borderRadius: "4px", fontSize: "0.8rem" }}>{series.rating}</span>
+                        {communityRating != null
+                            ? <span style={{ backgroundColor: "rgba(234,179,8,0.15)", border: "1px solid rgba(234,179,8,0.3)", padding: "4px 12px", borderRadius: "4px", fontSize: "0.8rem", color: "#eab308", fontWeight: "700" }}>★ {communityRating.toFixed(1)} <span style={{ opacity: 0.6, fontWeight: "400" }}>({ratingCount})</span></span>
+                            : <span style={{ backgroundColor: "rgba(255,255,255,0.1)", padding: "4px 12px", borderRadius: "4px", fontSize: "0.8rem" }}>{series.rating}</span>
+                        }
                     </div>
                     <h1 style={{ fontSize: "4rem", fontWeight: "900", marginBottom: "1.5rem" }}>{series.title}</h1>
                     <p style={{ fontSize: "1.1rem", lineHeight: "1.6", opacity: 0.8, marginBottom: "2rem" }}>{series.description}</p>

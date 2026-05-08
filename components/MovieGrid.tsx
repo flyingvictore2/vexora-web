@@ -13,6 +13,8 @@ export interface GridMovie {
     year: number;
     type: string;
     duration: string;
+    communityRating?: number | null;
+    ratingCount?: number;
 }
 
 interface MovieGridProps {
@@ -60,13 +62,13 @@ export default function MovieGrid({ movies, emptyMessage = "No se encontraron re
                                     background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 50%)",
                                     pointerEvents: "none",
                                 }} />
-                                {movie.rating && (
+                                {movie.communityRating != null && (
                                     <div style={{
                                         position: "absolute", top: "8px", left: "8px",
                                         backgroundColor: "rgba(0,0,0,0.7)", borderRadius: "6px",
                                         padding: "3px 8px", fontSize: "0.72rem", fontWeight: "700", color: "#fbbf24",
                                     }}>
-                                        ★ {movie.rating}
+                                        ★ {movie.communityRating.toFixed(1)}
                                     </div>
                                 )}
                             </div>
