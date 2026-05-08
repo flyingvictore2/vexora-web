@@ -354,11 +354,6 @@ export default function Navbar() {
                                                 ? <span style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}>🏆 {t("nav.achievements")}{prontoTag}</span>
                                                 : <Link href="/achievements" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>🏆 {t("nav.achievements")}</Link>
                                         )}
-                                        {sections.level !== "hidden" && (
-                                            sections.level === "soon"
-                                                ? <span style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}>⭐ Nivel{prontoTag}</span>
-                                                : <Link href="/level" className={styles.dropdownLink} style={{ display: 'block', padding: '10px 20px', fontSize: '13px', color: 'white', textDecoration: 'none' }}>⭐ Nivel</Link>
-                                        )}
                                     </div>
 
                                     {/* Social Section */}
