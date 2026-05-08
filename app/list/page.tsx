@@ -76,6 +76,81 @@ function MovieCard({ movie }: { movie: MovieItem }) {
     );
 }
 
+// ── Share modal ──────────────────────────────────────────────────────────────
+function ShareListModal({ list, onClose }: { list: UserList; onClose: () => void }) {
+    const [friends, setFriends] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [sent, setSent] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        fetch("/api/social/friends")
+            .then(r => r.json())
+            .then(d => setFriends(d.friends || []))
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
+
+    const share = async (friend: any) => {
+        const url = `${window.location.origin}/list/shared/${list.id}`;
+        const content = `📋 Te compartí mi lista **${list.name}**: ${url}`;
+        await fetch("/api/social/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ toUserId: friend.userId, content }),
+        });
+        setSent(prev => ({ ...prev, [friend.userId]: true }));
+    };
+
+    return (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}
+            onClick={onClose}>
+            <div style={{ background: "#111827", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px", padding: "28px", width: "100%", maxWidth: "420px", maxHeight: "80vh", overflow: "hidden", display: "flex", flexDirection: "column" }}
+                onClick={e => e.stopPropagation()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
+                    <div>
+                        <h2 style={{ color: "white", fontWeight: "900", fontSize: "1.1rem", margin: 0 }}>Compartir lista</h2>
+                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.82rem", marginTop: "4px" }}>📋 {list.name}</p>
+                    </div>
+                    <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", fontSize: "1.3rem", cursor: "pointer", lineHeight: 1 }}>✕</button>
+                </div>
+
+                <div style={{ overflowY: "auto", flex: 1 }}>
+                    {loading ? (
+                        <p style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", padding: "2rem 0" }}>Cargando amigos...</p>
+                    ) : friends.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "2rem 0" }}>
+                            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.88rem" }}>No tienes amigos aún.</p>
+                            <a href="/social/friends" style={{ color: "#6366f1", fontSize: "0.82rem", fontWeight: "700" }}>Añadir amigos →</a>
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {friends.map(f => (
+                                <div key={f.userId} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "rgba(255,255,255,0.04)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.07)" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                        <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#6366f1", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "0.9rem", color: "white", flexShrink: 0 }}>
+                                            {(f.name || f.username || f.email)?.[0]?.toUpperCase() || "?"}
+                                        </div>
+                                        <span style={{ color: "white", fontWeight: "600", fontSize: "0.88rem" }}>
+                                            {f.name || f.username || f.email}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => !sent[f.userId] && share(f)}
+                                        style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "0.78rem", fontWeight: "800", cursor: sent[f.userId] ? "default" : "pointer", border: "none", background: sent[f.userId] ? "rgba(16,185,129,0.15)" : "#6366f1", color: sent[f.userId] ? "#10b981" : "white", transition: "all 0.2s" }}
+                                    >
+                                        {sent[f.userId] ? "✓ Enviado" : "Enviar"}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── List section ──────────────────────────────────────────────────────────────
 function UserListSection({
     list,
     onDelete,
@@ -87,6 +162,7 @@ function UserListSection({
 }) {
     const [deleting, setDeleting] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [sharing, setSharing] = useState(false);
 
     const handleDelete = async () => {
         if (!confirmDelete) { setConfirmDelete(true); return; }
@@ -118,10 +194,14 @@ function UserListSection({
                     {list.items.length} {list.items.length === 1 ? "título" : "títulos"}
                 </span>
                 <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <button
+                        onClick={() => setSharing(true)}
+                        style={{ padding: "6px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "700", backgroundColor: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)", color: "#818cf8", cursor: "pointer" }}
+                    >
+                        🔗 Compartir
+                    </button>
                     {confirmDelete && (
-                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}>
-                            ¿Seguro?
-                        </span>
+                        <span style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.75rem" }}>¿Seguro?</span>
                     )}
                     <button
                         onClick={handleDelete}
@@ -131,14 +211,14 @@ function UserListSection({
                             backgroundColor: confirmDelete ? "rgba(229,9,20,0.15)" : "rgba(255,255,255,0.05)",
                             border: confirmDelete ? "1px solid rgba(229,9,20,0.3)" : "1px solid rgba(255,255,255,0.08)",
                             color: confirmDelete ? "#ef4444" : "rgba(255,255,255,0.4)",
-                            cursor: "pointer", transition: "all 0.15s",
-                            opacity: deleting ? 0.5 : 1,
+                            cursor: "pointer", transition: "all 0.15s", opacity: deleting ? 0.5 : 1,
                         }}
                         onMouseLeave={() => setConfirmDelete(false)}
                     >
                         {deleting ? "..." : confirmDelete ? "Confirmar" : "Eliminar lista"}
                     </button>
                 </div>
+                {sharing && <ShareListModal list={list} onClose={() => setSharing(false)} />}
             </div>
 
             {list.items.length === 0 ? (
