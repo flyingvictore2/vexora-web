@@ -281,78 +281,81 @@ export default function MyListsPage() {
     return (
         <div style={{ padding: "2rem 4% 4rem" }}>
             {/* Header */}
-            <div style={{ marginBottom: "2.5rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
-                    <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "800", margin: 0 }}>Mis Listas</h1>
+            <h1 style={{ color: "white", fontSize: "2rem", fontWeight: "900", margin: "0 0 1.5rem" }}>📋 Mis Listas</h1>
 
-                    {/* Create new list */}
-                    <div style={{ display: "flex", gap: "8px", marginLeft: "auto", alignItems: "center" }}>
-                        <input
-                            value={newListName}
-                            onChange={e => { setNewListName(e.target.value); setCreateError(null); }}
-                            onKeyDown={e => e.key === "Enter" && createList()}
-                            placeholder="Nueva lista..."
-                            style={{
-                                padding: "9px 14px", borderRadius: "8px", fontSize: "0.85rem",
-                                backgroundColor: "rgba(255,255,255,0.07)",
-                                border: createError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(255,255,255,0.12)",
-                                color: "white", outline: "none", width: "200px",
-                            }}
-                        />
+            {/* Create new list — prominent card */}
+            <div style={{
+                display: "flex", gap: "10px", alignItems: "center",
+                padding: "18px 20px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "14px",
+                marginBottom: "2.5rem",
+            }}>
+                <span style={{ fontSize: "1.3rem" }}>➕</span>
+                <input
+                    value={newListName}
+                    onChange={e => { setNewListName(e.target.value); setCreateError(null); }}
+                    onKeyDown={e => e.key === "Enter" && createList()}
+                    placeholder="Nombre de la nueva lista..."
+                    style={{
+                        flex: 1, padding: "11px 16px", borderRadius: "10px", fontSize: "0.95rem",
+                        backgroundColor: "rgba(255,255,255,0.07)",
+                        border: createError ? "1px solid rgba(239,68,68,0.5)" : "1px solid rgba(255,255,255,0.12)",
+                        color: "white", outline: "none",
+                    }}
+                />
+                <button
+                    onClick={createList}
+                    disabled={!newListName.trim() || creating}
+                    style={{
+                        padding: "11px 24px", borderRadius: "10px", fontWeight: "800",
+                        backgroundColor: newListName.trim() && !creating ? "#6366f1" : "rgba(255,255,255,0.05)",
+                        border: "none", color: newListName.trim() ? "white" : "rgba(255,255,255,0.3)",
+                        cursor: newListName.trim() && !creating ? "pointer" : "not-allowed",
+                        fontSize: "0.9rem", transition: "all 0.2s",
+                        opacity: creating ? 0.6 : 1, whiteSpace: "nowrap",
+                    }}
+                >
+                    {creating ? "Creando..." : "Crear lista"}
+                </button>
+            </div>
+
+            {/* Error / no-profile messages */}
+            {!profileId && (
+                <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+                    ⚠️ No hay perfil activo.{" "}
+                    <Link href="/profiles" style={{ color: "#60a5fa", textDecoration: "underline" }}>
+                        Selecciona un perfil
+                    </Link>
+                    {" "}para gestionar tus listas.
+                </p>
+            )}
+            {createError && (
+                <p style={{ color: "#f87171", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+                    ⚠️ {createError}
+                </p>
+            )}
+            {loadError && (
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem" }}>
+                    <p style={{ color: "#f87171", fontSize: "0.85rem", margin: 0 }}>
+                        ⚠️ Error al cargar listas: {loadError}
+                    </p>
+                    {profileId && (
                         <button
-                            onClick={createList}
-                            disabled={!newListName.trim() || creating}
+                            onClick={() => fetchLists(profileId)}
+                            disabled={refreshing}
                             style={{
-                                padding: "9px 18px", borderRadius: "8px", fontWeight: "700",
-                                backgroundColor: newListName.trim() && !creating ? "#2563eb" : "rgba(255,255,255,0.05)",
-                                border: "none", color: "white",
-                                cursor: newListName.trim() && !creating ? "pointer" : "not-allowed",
-                                fontSize: "0.85rem", transition: "all 0.2s",
-                                opacity: creating ? 0.6 : 1,
-                                whiteSpace: "nowrap",
+                                padding: "5px 12px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: "700",
+                                backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
+                                color: "white", cursor: "pointer", opacity: refreshing ? 0.5 : 1,
                             }}
                         >
-                            {creating ? "Creando..." : "+ Crear lista"}
+                            {refreshing ? "Cargando..." : "↺ Reintentar"}
                         </button>
-                    </div>
+                    )}
                 </div>
-
-                {/* Error / no-profile messages */}
-                {!profileId && (
-                    <p style={{ color: "#f87171", fontSize: "0.85rem", marginTop: "12px" }}>
-                        ⚠️ No hay perfil activo.{" "}
-                        <Link href="/profiles" style={{ color: "#60a5fa", textDecoration: "underline" }}>
-                            Selecciona un perfil
-                        </Link>
-                        {" "}para gestionar tus listas.
-                    </p>
-                )}
-                {createError && (
-                    <p style={{ color: "#f87171", fontSize: "0.85rem", marginTop: "12px" }}>
-                        ⚠️ {createError}
-                    </p>
-                )}
-                {loadError && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "12px" }}>
-                        <p style={{ color: "#f87171", fontSize: "0.85rem", margin: 0 }}>
-                            ⚠️ Error al cargar listas: {loadError}
-                        </p>
-                        {profileId && (
-                            <button
-                                onClick={() => fetchLists(profileId)}
-                                disabled={refreshing}
-                                style={{
-                                    padding: "5px 12px", borderRadius: "6px", fontSize: "0.78rem", fontWeight: "700",
-                                    backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)",
-                                    color: "white", cursor: "pointer", opacity: refreshing ? 0.5 : 1,
-                                }}
-                            >
-                                {refreshing ? "Cargando..." : "↺ Reintentar"}
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
+            )}
 
             {/* Custom user lists */}
             {userLists.length === 0 && myList.length === 0 && !loadError ? (
