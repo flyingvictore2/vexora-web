@@ -6,6 +6,7 @@ import Link from "next/link";
 const navItems = [
     { name: "Resumen", href: "/admin", icon: "📊" },
     { name: "Películas & Series", href: "/admin/movies", icon: "🎬" },
+    { name: "Listas públicas", href: "/admin/lists", icon: "📋" },
     { name: "Servidores", href: "/admin/servers", icon: "🌐" },
     { name: "Secciones visibles", href: "/admin/sections", icon: "👁️" },
     { name: "Soporte", href: "/admin/support", icon: "📬" },

@@ -74,6 +74,7 @@ function CreateModal({ onClose, onCreate }: { onClose: () => void; onCreate: (na
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function MyListsPage() {
     const [lists, setLists] = useState<UserList[]>([]);
+    const [featuredLists, setFeaturedLists] = useState<UserList[]>([]);
     const [loading, setLoading] = useState(true);
     const [profileId, setProfileId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
@@ -84,12 +85,16 @@ export default function MyListsPage() {
     useEffect(() => {
         const pid = localStorage.getItem("selectedProfileId");
         setProfileId(pid);
-        if (!pid) { setLoading(false); return; }
-        fetch(`/api/lists?profileId=${pid}`)
-            .then(r => r.json())
-            .then(d => setLists(Array.isArray(d) ? d : []))
-            .catch(() => {})
-            .finally(() => setLoading(false));
+        const userListsPromise = pid
+            ? fetch(`/api/lists?profileId=${pid}`).then(r => r.json()).catch(() => [])
+            : Promise.resolve([]);
+        Promise.all([
+            userListsPromise,
+            fetch("/api/public-lists").then(r => r.json()).catch(() => []),
+        ]).then(([ul, fl]) => {
+            setLists(Array.isArray(ul) ? ul : []);
+            setFeaturedLists(Array.isArray(fl) ? fl : []);
+        }).finally(() => setLoading(false));
     }, []);
 
     const createList = async (name: string) => {
@@ -190,6 +195,36 @@ export default function MyListsPage() {
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Featured / public lists */}
+            {featuredLists.length > 0 && (
+                <div style={{ marginTop: "4rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "1.5rem" }}>
+                        <h2 style={{ color: "white", fontSize: "1.4rem", fontWeight: "900", margin: 0 }}>✨ Listas destacadas</h2>
+                        <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.3)", fontWeight: "600" }}>Curadas por el equipo</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+                        {featuredLists.map(list => (
+                            <div key={list.id} style={{ borderRadius: "14px", overflow: "hidden", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(99,102,241,0.15)", transition: "transform 0.2s, border-color 0.2s" }}
+                                onMouseOver={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.4)"; }}
+                                onMouseOut={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(99,102,241,0.15)"; }}>
+                                <Link href={`/list/shared/${list.id}`} style={{ display: "block", aspectRatio: "16/9", overflow: "hidden", textDecoration: "none" }}>
+                                    <Collage items={list.items} />
+                                </Link>
+                                <div style={{ padding: "14px 16px" }}>
+                                    <Link href={`/list/shared/${list.id}`} style={{ textDecoration: "none" }}>
+                                        <h3 style={{ color: "white", fontWeight: "800", fontSize: "1rem", margin: "0 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{list.name}</h3>
+                                    </Link>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                        <span style={{ fontSize: "0.7rem", background: "rgba(99,102,241,0.15)", color: "#818cf8", padding: "2px 8px", borderRadius: "4px", fontWeight: "700" }}>DESTACADA</span>
+                                        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.78rem" }}>{list.items.length} títulos</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
