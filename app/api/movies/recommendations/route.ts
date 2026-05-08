@@ -12,8 +12,10 @@ export async function GET(req: Request) {
         const profileId = searchParams.get("profileId");
         if (!profileId) return new NextResponse("Missing profileId", { status: 400 });
 
-        // Always filter hidden on public site
-        const hiddenClause = `AND (m.hidden IS NULL OR m.hidden = false)`;
+        const isAdmin = (session.user as any)?.role === "ADMIN";
+        const hiddenClause = isAdmin
+            ? `AND (m.hidden = false OR m.hidden IS NULL OR (m.hidden = true AND m."hiddenFor" = 'users'))`
+            : `AND (m.hidden = false OR m.hidden IS NULL)`;
 
         // Self-heal
         await prisma.$executeRawUnsafe(

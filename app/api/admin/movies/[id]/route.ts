@@ -15,7 +15,10 @@ async function ensureHiddenCol() {
     ).catch(() => {});
 }
 
-// PATCH /api/admin/movies/[id] — toggle visibility { hidden: boolean }
+// PATCH /api/admin/movies/[id] — set visibility
+// Body: { hidden: false } → visible
+//       { hidden: true, hiddenFor: "users" } → hidden only for non-admins
+//       { hidden: true, hiddenFor: "all"   } → hidden for everyone
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -23,13 +26,16 @@ export async function PATCH(
     if (!await isAdmin()) return new NextResponse("Forbidden", { status: 403 });
     try {
         await ensureHiddenCol();
-        const { id } = await params;
-        const { hidden } = await req.json();
         await prisma.$executeRawUnsafe(
-            `UPDATE movie SET hidden = $1 WHERE id = $2`,
-            !!hidden, id
+            `ALTER TABLE movie ADD COLUMN IF NOT EXISTS "hiddenFor" TEXT DEFAULT 'all'`
+        ).catch(() => {});
+        const { id } = await params;
+        const { hidden, hiddenFor = "all" } = await req.json();
+        await prisma.$executeRawUnsafe(
+            `UPDATE movie SET hidden = $1, "hiddenFor" = $2 WHERE id = $3`,
+            !!hidden, hidden ? hiddenFor : "all", id
         );
-        return NextResponse.json({ ok: true, hidden: !!hidden });
+        return NextResponse.json({ ok: true, hidden: !!hidden, hiddenFor: hidden ? hiddenFor : "all" });
     } catch (err) {
         console.error("[PATCH movie visibility]", err);
         return new NextResponse("Internal Error", { status: 500 });

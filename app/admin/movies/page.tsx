@@ -17,6 +17,7 @@ interface Movie {
     releaseDate?: string | null;
     trailerUrl?: string | null;
     hidden?: boolean;
+    hiddenFor?: string; // "all" | "users"
 }
 
 interface Episode {
@@ -150,23 +151,31 @@ export default function AdminMovies() {
 
     useEffect(() => { fetchMovies(); }, []);
 
-    const toggleHidden = async (movie: Movie) => {
+    // visibility: "visible" | "users" | "all"
+    const setVisibility = async (movie: Movie, vis: "visible" | "users" | "all") => {
         setTogglingId(movie.id);
         try {
-            const newHidden = !movie.hidden;
+            const hidden = vis !== "visible";
+            const hiddenFor = vis === "visible" ? "all" : vis;
             const res = await fetch(`/api/admin/movies/${movie.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hidden: newHidden }),
+                body: JSON.stringify({ hidden, hiddenFor }),
             });
             if (!res.ok) throw new Error("Error");
-            setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, hidden: newHidden } : m));
-            showToast(newHidden ? "🙈 Título ocultado" : "👁️ Título visible");
+            setMovies(prev => prev.map(m => m.id === movie.id ? { ...m, hidden, hiddenFor } : m));
+            const labels = { visible: "👁️ Visible", users: "👤 Oculto para usuarios", all: "🔒 Oculto para todos" };
+            showToast(labels[vis]);
         } catch {
             showToast("Error al cambiar visibilidad", false);
         } finally {
             setTogglingId(null);
         }
+    };
+
+    const getVisibility = (movie: Movie): "visible" | "users" | "all" => {
+        if (!movie.hidden) return "visible";
+        return (movie.hiddenFor === "users") ? "users" : "all";
     };
 
     const filteredMovies = movies.filter(m => {
@@ -471,8 +480,11 @@ export default function AdminMovies() {
                                             <div>
                                                 <div style={{ fontWeight: "800", color: movie.hidden ? "rgba(255,255,255,0.4)" : "white", display: "flex", alignItems: "center", gap: "8px" }}>
                                                     {movie.title}
-                                                    {movie.hidden && (
-                                                        <span style={{ fontSize: "0.65rem", fontWeight: "800", padding: "2px 7px", borderRadius: "4px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", letterSpacing: "0.5px" }}>OCULTO</span>
+                                                    {movie.hidden && movie.hiddenFor === "users" && (
+                                                        <span style={{ fontSize: "0.65rem", fontWeight: "800", padding: "2px 7px", borderRadius: "4px", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24", letterSpacing: "0.5px" }}>👤 SOLO USUARIOS</span>
+                                                    )}
+                                                    {movie.hidden && movie.hiddenFor !== "users" && (
+                                                        <span style={{ fontSize: "0.65rem", fontWeight: "800", padding: "2px 7px", borderRadius: "4px", background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", letterSpacing: "0.5px" }}>🔒 TODOS</span>
                                                     )}
                                                 </div>
                                                 <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{movie.duration}</div>
@@ -511,25 +523,34 @@ export default function AdminMovies() {
                                         </span>
                                     </td>
                                     <td style={{ padding: "1rem", textAlign: "right" }}>
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px" }}>
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleHidden(movie)}
-                                                disabled={togglingId === movie.id}
-                                                title={movie.hidden ? "Mostrar" : "Ocultar"}
-                                                style={{
-                                                    padding: "5px 12px", borderRadius: "7px", fontSize: "0.75rem", fontWeight: "800",
-                                                    cursor: togglingId === movie.id ? "wait" : "pointer", border: "1px solid",
-                                                    background: movie.hidden ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.08)",
-                                                    borderColor: movie.hidden ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.2)",
-                                                    color: movie.hidden ? "#10b981" : "rgba(239,68,68,0.7)",
-                                                    opacity: togglingId === movie.id ? 0.5 : 1,
-                                                    transition: "all 0.2s",
-                                                }}
-                                            >
-                                                {togglingId === movie.id ? "..." : movie.hidden ? "👁️ Mostrar" : "🙈 Ocultar"}
-                                            </button>
-                                            <button type="button" onClick={() => openEdit(movie)} style={{ color: "var(--primary)", fontWeight: "700", background: "none", border: "none", cursor: "pointer" }}>Editar</button>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px", flexWrap: "wrap" }}>
+                                            {/* 3-state visibility selector */}
+                                            {(["visible", "users", "all"] as const).map(vis => {
+                                                const current = getVisibility(movie);
+                                                const active = current === vis;
+                                                const cfg = {
+                                                    visible: { label: "👁️", title: "Visible", color: "#10b981", bg: "rgba(16,185,129," },
+                                                    users:   { label: "👤", title: "Solo usuarios", color: "#fbbf24", bg: "rgba(245,158,11," },
+                                                    all:     { label: "🔒", title: "Oculto todos", color: "#f87171", bg: "rgba(239,68,68," },
+                                                }[vis];
+                                                return (
+                                                    <button key={vis} type="button"
+                                                        onClick={() => !active && setVisibility(movie, vis)}
+                                                        disabled={togglingId === movie.id}
+                                                        title={cfg.title}
+                                                        style={{
+                                                            padding: "5px 10px", borderRadius: "7px", fontSize: "0.8rem", fontWeight: "800",
+                                                            cursor: active || togglingId === movie.id ? "default" : "pointer",
+                                                            border: `1px solid ${active ? cfg.color + "66" : "rgba(255,255,255,0.08)"}`,
+                                                            background: active ? `${cfg.bg}0.15)` : "rgba(255,255,255,0.03)",
+                                                            color: active ? cfg.color : "rgba(255,255,255,0.3)",
+                                                            opacity: togglingId === movie.id ? 0.5 : 1,
+                                                            transition: "all 0.15s",
+                                                        }}
+                                                    >{cfg.label}</button>
+                                                );
+                                            })}
+                                            <button type="button" onClick={() => openEdit(movie)} style={{ color: "var(--primary)", fontWeight: "700", background: "none", border: "none", cursor: "pointer", marginLeft: "4px" }}>Editar</button>
                                             <button type="button" onClick={() => confirmDelete(movie)} style={{ color: "#ef4444", fontWeight: "700", background: "none", border: "none", cursor: "pointer" }}>Eliminar</button>
                                         </div>
                                     </td>

@@ -60,6 +60,7 @@ model movie {
   trailerUrl   String?
   views        Int            @default(0)
   hidden       Boolean        @default(false)
+  hiddenFor    String?        @default("all")
   mylist        mylist[]
   watchhistory  watchhistory[]
   episodes      episode[]

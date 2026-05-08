@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // GET /api/discover?type=top|random|filter&genre=&year=&quality=&plan=&q=
@@ -7,13 +9,17 @@ export async function GET(req: Request) {
     const action = searchParams.get("type") || "filter";
 
     try {
-        await prisma.$executeRawUnsafe(
-            `ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`
-        ).catch(() => {});
+        await prisma.$executeRawUnsafe(`ALTER TABLE movie ADD COLUMN IF NOT EXISTS hidden BOOLEAN NOT NULL DEFAULT false`).catch(() => {});
         await prisma.$executeRawUnsafe(`ALTER TABLE "movie" ADD COLUMN IF NOT EXISTS "views" INTEGER DEFAULT 0`).catch(() => {});
+        await prisma.$executeRawUnsafe(`ALTER TABLE movie ADD COLUMN IF NOT EXISTS "hiddenFor" TEXT DEFAULT 'all'`).catch(() => {});
 
-        // Always filter hidden — admin panel has its own endpoint that shows all
-        const hiddenClause = `AND (hidden IS NULL OR hidden = false)`;
+        const session = await getServerSession(authOptions);
+        const isAdmin = (session?.user as any)?.role === "ADMIN";
+
+        const visClause = isAdmin
+            ? `(hidden = false OR hidden IS NULL OR (hidden = true AND "hiddenFor" = 'users'))`
+            : `(hidden = false OR hidden IS NULL)`;
+        const hiddenClause = `AND ${visClause}`;
 
         if (action === "random") {
             const rows = await prisma.$queryRawUnsafe<any[]>(
